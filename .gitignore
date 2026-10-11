@@ -1,0 +1,32 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Secrets and local config (keep a template if you add one)
+.env
+.env.*
+!.env.example
+frontend/.streamlit/secrets.toml
+
+# Runtime data: uploaded PDFs, BM25 indexes, registries, caches
+rag-service/storage/
+rag-service/data/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Node (only if the frontend later gets a build step)
+node_modules/

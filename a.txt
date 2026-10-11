@@ -1,0 +1,129 @@
+SNAPRAG — Complete Run Flow
+┌──────────────────────────────────────────────────────────────┐
+│                    SESSION START (Turn 1)                    │
+└──────────────────────────┬───────────────────────────────────┘
+                           ▼
+                 ┌─────────────────────┐
+                 │  HANDOFF CHECK      │
+                 │  (session resumes?) │
+                 └──────────┬──────────┘
+                            ▼
+                ┌─────────────────────┐     NO snapshot
+                │ Handoff document    │     → empty session
+                │ inject into prompt  │     → fresh start
+                └──────────┬──────────┘
+                           ▼
+                 ┌─────────────────────┐
+                 │  USER QUERY arrives │
+                 └──────────┬──────────┘
+                            ▼
+        ╔══════════════════════════════════════════════╗
+        ║            STAGE 1 · CONTEXT CHECK           ║
+        ╠══════════════════════════════════════════════╣
+        ║  Context Quality Monitor (CQM)               ║
+        ║  ─ CIS = w₁·grounding + w₂·token(pressure)   ║
+        ║        + w₃·coherence − w₄·contradiction     ║
+        ║                                               ║
+        ║  IF token_pressure < 0.20 OR CIS < 0.55      ║
+        ║     → TRIGGER SNAPSHOT (Stage 4)             ║
+        ║          └─ then CONTINUE normally           ║
+        ║  ELSE → continue                              ║
+        ╚══════════════════════════════════════════════╝
+                            ▼
+        ╔══════════════════════════════════════════════╗
+        ║            STAGE 2 · QUERY UNDERSTANDING     ║
+        ╠══════════════════════════════════════════════╣
+        ║  1. Classify query type                      ║
+        ║     (DEFINITION/EXPLANATION/COMPARISON/...)  ║
+        ║  2. Route → per-type config table            ║
+        ║     (dense_top_k, bm25_top_k, hyde toggle)   ║
+        ║  3. Rewrite query (2 paraphrases)            ║
+        ║  4. Decompose (multi-hop → sub-queries)      ║
+        ║  5. Self-query (metadata filters: doc/page)  ║
+        ║  6. HyDE (if enabled for this type)          ║
+        ║  7. Deduplicate candidate queries            ║
+        ╚══════════════════════════════════════════════╝
+                            ▼
+        ╔══════════════════════════════════════════════╗
+        ║            STAGE 3 · HYBRID RETRIEVAL        ║
+        ╠══════════════════════════════════════════════╣
+        ║  A. DOCUMENT STORE                           ║
+        ║     Dense: Qdrant (BGE-small) top-k          ║
+        ║     Sparse: BM25Okapi top-k                  ║
+        ║     → RRF fusion (k=60)                      ║
+        ║     → cross-encoder rerank                   ║
+        ║     → parent retrieval + compression         ║
+        ║                                             ║
+        ║  B. MEMORY STORE (SMS-AR)   ← NOVEL         ║
+        ║     Retrieve top-k snapshot chunks           ║
+        ║     λ = σ(β·(turn − θ))  blend weight        ║
+        ║     (λ rises with conversation length)       ║
+        ║                                             ║
+        ║  C. FUSED CONTEXT = A ∪ B (dedup)           ║
+        ╚══════════════════════════════════════════════╝
+                            ▼
+        ╔══════════════════════════════════════════════╗
+        ║      STAGE 4 · SNAPSHOT ENGINE  (ON TRIGGER) ║
+        ╠══════════════════════════════════════════════╣
+        ║  Extract facets via LLM (JSON-schema):       ║
+        ║    • facts        (ground-verified)          ║
+        ║    • entities     (doc/page anchors)         ║
+        ║    • decisions    (closed/open threads)      ║
+        ║    • open_questions                           ║
+        ║  → state_hash  → versioned + immutable       ║
+        ║  → embed + store in Snapshot Vector Store    ║
+        ║  → sample 3-5 old snapshots as EXEMPLARS     ║
+        ║    for NEXT snapshot generation (self-improve)║
+        ╚══════════════════════════════════════════════╝
+                            ▼
+        ╔══════════════════════════════════════════════╗
+        ║    STAGE 5 · SELF-CORRECTING GENERATION      ║
+        ╠══════════════════════════════════════════════╣
+        ║  LOOP (max 2 attempts):                       ║
+        ║    Generate answer + inline citations         ║
+        ║    → Verify (faithfulness vs context)         ║
+        ║    → Confidence score (sigmoid)               ║
+        ║                                              ║
+        ║  confidence ≥ 0.80 → ACCEPT                  ║
+        ║  0.55 < conf < 0.80 → RETRY (rewrite→     ║
+        ║                          re-retrieve→ regen) ║
+        ║  confidence ≤ 0.55 → CORRECTIVE              ║
+        ║       (enable HyDE / web tool / expand)      ║
+        ║                              └→ regener       ║
+        ╚══════════════════════════════════════════════╝
+                            ▼
+        ╔══════════════════════════════════════════════╗
+        ║            STAGE 6 · OUTPUT & UPDATE          ║
+        ╠══════════════════════════════════════════════╣
+        ║  • Answer + citations (doc + page)           ║
+        ║  • Confidence score displayed                 ║
+        ║  • Low-confidence disclaimer if unverifiable  ║
+        ║  • Performance/latency logged (audit trail)   ║
+        ║                                              ║
+        ║  UPDATE session memory:                      ║
+        ║    • decisions → open_questions close        ║
+        ║    • new facts verified & added              ║
+        ║    • contradiction → fact superseded         ║
+        ║                                              ║
+        ║  RETURN TO STAGE 1 for next turn             ║
+        ╚══════════════════════════════════════════════╝
+Compressed One-Liner Flow
+Query → Context Check → Query Understanding → Hybrid Retrieval
+     → (Snapshot if triggered) → Self-Correcting Generation
+     → Verified Answer → Memory Update → Next Turn
+Which Files Map to This Flow (Your Existing Code)
+Stage	Existing File
+Context Check (CQM)	—
+Query Understanding	query_classifier.py, query_router.py, query_rewriter.py, query_decomposition.py, self_query_service.py, hyde_service.py
+Hybrid Retrieval	retrieval_pipeline.py, bm_25_service.py, rrf_service.py, reranker_services.py, cross_encoder_service.py
+Snapshot Engine	—
+Memory Store	embedding_service.py, Qdrant
+Self-Correction	generation_service.py, verification_service.py, confidence_service.py
+Handoff	—
+Output/Update	response_builder.py
+Flow In Terms of Turn Lifecycle (Multi-Turn)
+Turn 1-10:    CQM okay, normal hybrid retrieval, no snapshot
+Turn 11:      token_pressure < 0.20 → SNAPSHOT created
+Turn 12:      Handoff injected → model remembers turn 1-11 facts
+Turn 40:      λ rising → snapshot recall more important
+Turn 100:     System still < 0.9 memory loss (vs baseline < 0.5)
