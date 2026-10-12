@@ -53,13 +53,6 @@ def set_cache(question: str, response):
     )
 
 
-def clear_cache(question: str):
-
-    key = make_cache_key(question)
-
-    redis_call(lambda r: r.delete(key), "nothing cleared")
-
-
 def clear_all_cache():
     """
     Evict every cached answer.

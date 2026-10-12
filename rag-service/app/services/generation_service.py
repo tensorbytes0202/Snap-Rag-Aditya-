@@ -16,13 +16,15 @@ _log = logging.getLogger(__name__)
 def generate_answer(
     question: str,
     context: str,
-    query_type: str
+    query_type: str,
+    history=None,
 ):
 
     prompt = build_generation_prompt(
         question,
         context,
-        query_type
+        query_type,
+        history,
     )
 
     response = chat(
@@ -49,13 +51,15 @@ def generate_answer(
 def stream_answer(
     question: str,
     context: str,
-    query_type: str
+    query_type: str,
+    history=None,
 ):
 
     prompt = build_generation_prompt(
         question,
         context,
-        query_type
+        query_type,
+        history,
     )
 
     stream = chat(

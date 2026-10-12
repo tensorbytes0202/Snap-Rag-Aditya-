@@ -1,5 +1,5 @@
 from langsmith import traceable
-from app.services import cross_encoder_service
+
 from app.api.dependencies.reranker import get_cross_encoder
 
 

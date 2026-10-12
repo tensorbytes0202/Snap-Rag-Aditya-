@@ -132,6 +132,18 @@ class Settings(BaseSettings):
     def BM25_INDEX_DIR(self) -> str:
         return os.path.join(self.STORAGE_DIR, "bm25_indexes")
 
+    @property
+    def CHATS_DIR(self) -> str:
+        return os.path.join(self.STORAGE_DIR, "chats")
+
+    # ==========================================
+    # Chat sessions
+    # ==========================================
+
+    # Most recent turns (question + answer) shown to the LLM so it can
+    # resolve follow-ups like "what about Router-0?".
+    HISTORY_TURNS: int = 3
+
     # ==========================================
     # Pydantic Settings
     # ==========================================

@@ -347,7 +347,7 @@ def search_similar_chunks(
 
     document_name=None,
 
-    page=None
+    page=None   
 
 ):
 
@@ -427,22 +427,3 @@ def search_similar_chunks(
         _log.debug("First result payload: %s", search_result.points[0].payload)
 
     return search_result.points
-
-
-# ==========================================================
-# Debug Utility
-# ==========================================================
-
-def debug_search():
-
-    result = client.query_points(
-
-        collection_name=COLLECTION_NAME,
-
-        query=[0.0] * settings.EMBEDDING_DIM,
-
-        limit=1
-
-    )
-
-    _log.debug("Debug search results: %s", result.points)

@@ -11,11 +11,7 @@ from app.services.response_builder import (
     build_failure_response,
     build_success_response,
 )
-from app.services.retrieval_pipeline import (
-    build_citations,
-    build_context,
-    build_context_chunks,
-)
+from app.services.retrieval_pipeline import build_citations
 from app.services.verification_service import verify_answer
 
 
@@ -32,19 +28,21 @@ UNVERIFIED_ANSWER = (
 def process_query(
     question: str,
     active_document: str | None = None,
+    history=None,
 ):
 
     _log.info("RAG query started (document=%s)", active_document)
 
     # The cache key must include the active document, otherwise
     # "what is normalization?" on DBMS.pdf and on Android.pdf would
-    # return the same cached response.
+    # return the same cached response. With chat history the answer
+    # depends on the conversation too, so the cache is skipped.
     cache_key = (
         f"{active_document or 'ALL_DOCUMENTS'}"
         f"::{question.strip().lower()}"
     )
 
-    cached_response = get_cache(cache_key)
+    cached_response = None if history else get_cache(cache_key)
 
     if cached_response:
         _log.info("Returning response from Redis cache")
@@ -55,11 +53,9 @@ def process_query(
     if not found.ranked_chunks:
         return build_failure_response(question, found.rewritten_question)
 
-    context = build_context(question, found.results, found.config)
-
     top_context = found.top_context
 
-    answer = generate_answer(question, top_context, found.query_type)
+    answer = generate_answer(question, top_context, found.query_type, history)
 
     followups = generate_followups(question, answer)
 
@@ -79,17 +75,14 @@ def process_query(
         confidence=calculate_confidence(
             [chunk["rerank_score"] for chunk in found.top_chunks]
         ),
-        dense_chunks=context["parent_chunks"],
-        expanded_chunks=context["expanded_chunks"],
-        compressed_chunks=context["compressed_chunks"],
         results=found.results,
         bm25_chunks=found.bm25_chunks,
         hybrid_chunks=found.hybrid_chunks,
         sources=found.sources,
         citations=build_citations(found.sources),
-        context_chunks=build_context_chunks(found.ranked_chunks),
     )
 
-    set_cache(cache_key, response)
+    if not history:
+        set_cache(cache_key, response)
 
     return response

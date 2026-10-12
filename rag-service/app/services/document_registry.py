@@ -4,7 +4,6 @@ import os
 import threading
 
 from app.core.config import settings
-from app.repositories.vector_repository import client, COLLECTION_NAME
 
 
 logger = logging.getLogger(__name__)
@@ -13,18 +12,6 @@ logger = logging.getLogger(__name__)
 # and the active-documents file so concurrent requests can't race
 # each other into a torn write.
 _lock = threading.Lock()
-
-
-def is_collection_available():
-
-    collections = client.get_collections()
-
-    names = [
-        c.name
-        for c in collections.collections
-    ]
-
-    return COLLECTION_NAME in names
 
 
 def _atomic_write(path, data):

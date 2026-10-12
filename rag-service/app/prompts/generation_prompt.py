@@ -1,25 +1,3 @@
-from app.services.chat_memory import get_history
-
-
-# ==========================================================
-# Conversation History
-# ==========================================================
-
-def build_history():
-
-    history = get_history()
-
-    history_text = ""
-
-    for msg in history[-6:]:
-
-        history_text += (
-            f"{msg['role']}: {msg['content']}\n"
-        )
-
-    return history_text
-
-
 # ==========================================================
 # Formatting Instructions
 # ==========================================================
@@ -67,15 +45,33 @@ Give a detailed explanation using headings and bullet points.
 # Prompt Builder
 # ==========================================================
 
+def _format_history(history) -> str:
+    """Recent chat turns, oldest first. Empty without history, so a
+    question asked outside a chat gets exactly the same prompt as before."""
+
+    if not history:
+        return ""
+
+    lines = "\n".join(
+        f"Q{turn['turn']}: {turn['question']}\nA{turn['turn']}: {turn['answer']}"
+        for turn in history
+    )
+
+    return f"""
+CONVERSATION SO FAR (only to understand what the question refers to, e.g. "it",
+"that router", "what about X"; facts must still come from CONTEXT):
+{lines}
+"""
+
+
 def build_generation_prompt(
 
     question,
     context,
-    query_type
+    query_type,
+    history=None,
 
 ):
-
-    history_text = build_history()
 
     format_instruction = get_format_instruction(
         query_type
@@ -100,10 +96,7 @@ Rules:
 
 FORMAT INSTRUCTION:
 {format_instruction}
-
-CONVERSATION HISTORY:
-{history_text}
-
+{_format_history(history)}
 CONTEXT:
 {context}
 

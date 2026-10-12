@@ -22,6 +22,7 @@ class State(TypedDict, total=False):
 
     question: str
     active_document: str | None
+    history: list
     query_type: str
     context: str
 
@@ -52,7 +53,9 @@ def generate(state: State, writer: StreamWriter):
     writer({"type": "step", "message": "Generating answer with LLM"})
 
     try:
-        for token in stream_answer(state["question"], state["context"], state["query_type"]):
+        for token in stream_answer(
+            state["question"], state["context"], state["query_type"], state.get("history")
+        ):
             writer({"type": "token", "token": token})
 
     except Exception as exc:
@@ -73,9 +76,9 @@ _graph = (
 )
 
 
-def stream_query(question: str, active_document: str | None = None):
+def stream_query(question: str, active_document: str | None = None, history=None):
 
     yield from _graph.stream(
-        {"question": question, "active_document": active_document},
+        {"question": question, "active_document": active_document, "history": history or []},
         stream_mode="custom",
     )
