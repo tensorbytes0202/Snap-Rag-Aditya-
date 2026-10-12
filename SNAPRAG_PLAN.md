@@ -333,6 +333,17 @@ SESSION: SESSION_TTL_SECONDS, HANDOFF_MAX_TOKENS=600, CONTEXT_BUDGET_TOKENS=... 
 - **Tests**: session CRUD, history scoping, TTL, concurrency.
 
 ### Phase 2 — CQM + Snapshot Engine (2–3 days) — the research core
+> Status: DONE (Oct 12). `services/context_monitor.py` (CIS = 0.35g + 0.25h + 0.25c - 0.15x;
+> trigger headroom < 0.20 or CIS < 0.55, never on a 1-turn window), `services/snapshot_engine.py`
+> (4 facets via LLM, anchors from turn citations, prev_hash chain, sha256 state_hash,
+> write-once files, last 3 snapshots as exemplars, `after_turn` background task),
+> `services/snapshot_store.py` (files under `storage/memory/`, Qdrant `snapshot_memory`),
+> `GET /chats/{id}/memory`. Per-turn CIS signals are logged to `cqm.jsonl` for the paper.
+> Interpretation: a.txt's "token_pressure < 0.20" is read as *headroom* (1 - used/budget)
+> < 0.20, so the token term adds to CIS. Findings from the live run: short factual answers
+> (~40-55 tokens/turn) give only ~1.5x compression, so the Phase 6 dataset needs long,
+> explanatory answers for the compression claim; anchors are turn-level (all cited pages),
+> not per-fact; grounding is inert for streamed turns (no verification there until Phase 4).
 - `context_monitor.py`: compute `token_pressure ρ` per turn; grounding =
   verification-supported fraction; coherence = turn-over-turn embedding cosine;
   contradiction = deduped conflicting-fact detector (LLM/embedding); CIS formula; trigger
@@ -346,6 +357,20 @@ SESSION: SESSION_TTL_SECONDS, HANDOFF_MAX_TOKENS=600, CONTEXT_BUDGET_TOKENS=... 
   pass-through.
 
 ### Phase 2b — Snapshot codec + verified reconstruction (3–4 days) — THE paper contribution
+> Status: DONE (Oct 12). `services/reconstruction.py`: `recall(snapshot, question, mode)` =
+> reconstruct (snapshot + anchored pages via `vector_repository.get_page_texts`) -> verify
+> cascade (snapshot/document, then archive for doubtful sentences) -> drop unsupported.
+> Modes = ablation ladder `snapshot -> evidence -> verify -> archive`. Cold archive = the
+> append-only chat log cut to the snapshot's turn range (no copy). Benchmark:
+> `benchmarks/reconstruction_eval.py --demo` (judge `gemini-3.5-flash` != reconstruction
+> model; retries quota errors; failed judgements excluded, never scored as 0).
+> Demo result (5 turns, 5 probes incl. a user decision and an absent fact): all modes 0%
+> hallucination, 100% fact recall, absent fact -> empty memory. The demo is too easy to
+> separate the ladder: at 1.5x compression every kept sentence was already confirmed by the
+> snapshot itself, so the document and archive tiers never fired. Phase 6 must use long
+> conversations at 4-10x+ compression with distractors. Bug found and fixed: the judge
+> echoed "[turn n]" markers instead of source labels (now explicit allowed labels, no
+> bracket markers). Judge leniency seen once (fact recall) -> validate the judge in Phase 6.
 - **Cold archive:** write the old turns verbatim, immutable, e.g.
   `archives/{user_id}/{session_id}/{turn_range}.jsonl.gz`.
 - **Encoder (lossy):** extract atomic facts; force-keep numbers, dates and entities
@@ -484,14 +509,14 @@ claiming novelty, and have a second person review the related-work table.
 
 - [ ] Phase 0 cleanup + shared `query_runner` + docker-compose
 - [x] Phase 1 sessions (append-only JSONL per chat) + per-session history
-- [ ] Phase 2 CQM + snapshot engine (immutable, versioned, exemplars)
+- [x] Phase 2 CQM + snapshot engine (immutable, versioned, exemplars)
 - [ ] Phase 3 SMS-AR recall + λ-blend + fused context
 - [ ] Phase 4 confidence-gated self-correction loop
 - [ ] Phase 5 handoff injection + memory updater
 - [ ] Phase 6 eval harness → numbers that fill the paper's Results
 
 ### Added after the prior-art review (Oct 2026)
-- [ ] Phase 2b codec + cold archive + verified reconstruction (the paper contribution)
+- [x] Phase 2b codec + cold archive + verified reconstruction (the paper contribution)
 - [ ] Baselines: LCM, Mem0, A-MEM, LLMLingua, full-context, summary-buffer
 - [ ] Own long document-QA conversation set (100+ turns, page citations)
 - [ ] Ablation ladder: keywords-only -> + evidence -> + verify -> + archive

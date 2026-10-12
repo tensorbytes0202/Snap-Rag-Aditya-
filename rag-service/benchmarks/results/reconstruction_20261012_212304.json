@@ -1,0 +1,506 @@
+{
+  "chat_id": "d405dbb2ced04522a48cb70e88e8456c",
+  "judge_model": "gemini-3.5-flash",
+  "reconstruction_model": "gemini-3.5-flash-lite",
+  "compression": [
+    1.41
+  ],
+  "summary": {
+    "snapshot": {
+      "hallucination_rate": 0.5,
+      "fact_recall": 1.0,
+      "avg_memory_tokens": 32.4,
+      "sentences_returned": 10,
+      "sentences_dropped": 0
+    },
+    "evidence": {
+      "hallucination_rate": 0.444,
+      "fact_recall": 1.0,
+      "avg_memory_tokens": 31.2,
+      "sentences_returned": 9,
+      "sentences_dropped": 0
+    },
+    "verify": {
+      "hallucination_rate": 0.556,
+      "fact_recall": 1.0,
+      "avg_memory_tokens": 27.4,
+      "sentences_returned": 9,
+      "sentences_dropped": 0
+    },
+    "archive": {
+      "hallucination_rate": 0.375,
+      "fact_recall": 0.75,
+      "avg_memory_tokens": 31.2,
+      "sentences_returned": 8,
+      "sentences_dropped": 0
+    }
+  },
+  "rows": [
+    {
+      "question": "What static routes are configured on Router-0 and Router-2?",
+      "mode": "snapshot",
+      "returned": 4,
+      "dropped": 0,
+      "unsupported": 0,
+      "hallucination": 0.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 75,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "Router-0 has a static route for network 20.0.0.0/8 via next hop 40.40.40.2.",
+          "source": null
+        },
+        {
+          "text": "Router-0 has a static route for network 30.0.0.0/8 via next hop 40.40.40.2.",
+          "source": null
+        },
+        {
+          "text": "Router-2 has a static route for network 10.0.0.0/8 via next hop 50.50.50.1.",
+          "source": null
+        },
+        {
+          "text": "Router-2 has a static route for network 20.0.0.0/8 via next hop 50.50.50.1.",
+          "source": null
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": []
+    },
+    {
+      "question": "What static routes are configured on Router-0 and Router-2?",
+      "mode": "evidence",
+      "returned": 4,
+      "dropped": 0,
+      "unsupported": 0,
+      "hallucination": 0.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 75,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "Router-0 has a static route for network 20.0.0.0/8 via next hop 40.40.40.2.",
+          "source": null
+        },
+        {
+          "text": "Router-0 has a static route for network 30.0.0.0/8 via next hop 40.40.40.2.",
+          "source": null
+        },
+        {
+          "text": "Router-2 has a static route for network 10.0.0.0/8 via next hop 50.50.50.1.",
+          "source": null
+        },
+        {
+          "text": "Router-2 has a static route for network 20.0.0.0/8 via next hop 50.50.50.1.",
+          "source": null
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": []
+    },
+    {
+      "question": "What static routes are configured on Router-0 and Router-2?",
+      "mode": "verify",
+      "returned": 4,
+      "dropped": 0,
+      "unsupported": 0,
+      "hallucination": 0.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 75,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "Router-0 has a static route for network 20.0.0.0/8 via next hop 40.40.40.2.",
+          "source": "snapshot"
+        },
+        {
+          "text": "Router-0 has a static route for network 30.0.0.0/8 via next hop 40.40.40.2.",
+          "source": "snapshot"
+        },
+        {
+          "text": "Router-2 has a static route for network 10.0.0.0/8 via next hop 50.50.50.1.",
+          "source": "snapshot"
+        },
+        {
+          "text": "Router-2 has a static route for network 20.0.0.0/8 via next hop 50.50.50.1.",
+          "source": "snapshot"
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": []
+    },
+    {
+      "question": "What static routes are configured on Router-0 and Router-2?",
+      "mode": "archive",
+      "returned": 4,
+      "dropped": 0,
+      "unsupported": 0,
+      "hallucination": 0.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 75,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "Router-0 has a static route for network 20.0.0.0/8 via next hop 40.40.40.2.",
+          "source": "snapshot"
+        },
+        {
+          "text": "Router-0 has a static route for network 30.0.0.0/8 via next hop 40.40.40.2.",
+          "source": "snapshot"
+        },
+        {
+          "text": "Router-2 has a static route for network 10.0.0.0/8 via next hop 50.50.50.1.",
+          "source": "snapshot"
+        },
+        {
+          "text": "Router-2 has a static route for network 20.0.0.0/8 via next hop 50.50.50.1.",
+          "source": "snapshot"
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": []
+    },
+    {
+      "question": "What default gateway does PC5 use?",
+      "mode": "snapshot",
+      "returned": 1,
+      "dropped": 0,
+      "unsupported": 0,
+      "hallucination": 0.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 9,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "PC 5 uses Default Gateway 30.30.30.0",
+          "source": null
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": []
+    },
+    {
+      "question": "What default gateway does PC5 use?",
+      "mode": "evidence",
+      "returned": 1,
+      "dropped": 0,
+      "unsupported": 0,
+      "hallucination": 0.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 9,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "PC 5 uses Default Gateway 30.30.30.0",
+          "source": null
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": []
+    },
+    {
+      "question": "What default gateway does PC5 use?",
+      "mode": "verify",
+      "returned": 1,
+      "dropped": 0,
+      "unsupported": 1,
+      "hallucination": 1.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 9,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "PC 5 uses Default Gateway 30.30.30.0.",
+          "source": "snapshot"
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": [
+        "PC 5 uses Default Gateway 30.30.30.0."
+      ]
+    },
+    {
+      "question": "What default gateway does PC5 use?",
+      "mode": "archive",
+      "returned": 1,
+      "dropped": 0,
+      "unsupported": 0,
+      "hallucination": 0.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 9,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "PC 5 uses Default Gateway 30.30.30.0.",
+          "source": "snapshot"
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": []
+    },
+    {
+      "question": "Which routers did I say my report will describe?",
+      "mode": "snapshot",
+      "returned": 3,
+      "dropped": 0,
+      "unsupported": 3,
+      "hallucination": 1.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 30,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "The report includes static routes for Router-0.",
+          "source": null
+        },
+        {
+          "text": "The report includes static routes for Router-2.",
+          "source": null
+        },
+        {
+          "text": "The report skips Router-1.",
+          "source": null
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": [
+        "The report includes static routes for Router-0.",
+        "The report includes static routes for Router-2.",
+        "The report skips Router-1."
+      ]
+    },
+    {
+      "question": "Which routers did I say my report will describe?",
+      "mode": "evidence",
+      "returned": 2,
+      "dropped": 0,
+      "unsupported": 2,
+      "hallucination": 1.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 24,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "The report will describe static routes for Router-0 and Router-2.",
+          "source": null
+        },
+        {
+          "text": "The report will skip Router-1.",
+          "source": null
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": [
+        "The report will describe static routes for Router-0 and Router-2.",
+        "The report will skip Router-1."
+      ]
+    },
+    {
+      "question": "Which routers did I say my report will describe?",
+      "mode": "verify",
+      "returned": 2,
+      "dropped": 0,
+      "unsupported": 2,
+      "hallucination": 1.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 27,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "The report content includes static routes for Router-0.",
+          "source": "snapshot"
+        },
+        {
+          "text": "The report content includes static routes for Router-2.",
+          "source": "snapshot"
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": [
+        "The report content includes static routes for Router-0.",
+        "The report content includes static routes for Router-2."
+      ]
+    },
+    {
+      "question": "Which routers did I say my report will describe?",
+      "mode": "archive",
+      "returned": 1,
+      "dropped": 0,
+      "unsupported": 1,
+      "hallucination": 1.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 24,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "You said your report will describe static routes for Router-0 and Router-2 while skipping Router-1.",
+          "source": "snapshot"
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": [
+        "You said your report will describe static routes for Router-0 and Router-2 while skipping Router-1."
+      ]
+    },
+    {
+      "question": "Which serial interfaces connect Router-1 to the other routers?",
+      "mode": "snapshot",
+      "returned": 2,
+      "dropped": 0,
+      "unsupported": 2,
+      "hallucination": 1.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 48,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "Router-1 connects to Router-0 via Serial2/0 (Se2/0) with IP addresses 40.40.40.1 and 40.40.40.2.",
+          "source": null
+        },
+        {
+          "text": "Router-1 connects to Router-2 via Serial3/0 (Se3/0) with IP addresses 50.50.50.1 and 50.50.50.2.",
+          "source": null
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": [
+        "Router-1 connects to Router-0 via Serial2/0 (Se2/0) with IP addresses 40.40.40.1 and 40.40.40.2.",
+        "Router-1 connects to Router-2 via Serial3/0 (Se3/0) with IP addresses 50.50.50.1 and 50.50.50.2."
+      ]
+    },
+    {
+      "question": "Which serial interfaces connect Router-1 to the other routers?",
+      "mode": "evidence",
+      "returned": 2,
+      "dropped": 0,
+      "unsupported": 2,
+      "hallucination": 1.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 48,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "Router-1 connects to Router-0 via Serial2/0 (Se2/0) with IP addresses 40.40.40.1 and 40.40.40.2.",
+          "source": null
+        },
+        {
+          "text": "Router-1 connects to Router-2 via Serial3/0 (Se3/0) with IP addresses 50.50.50.1 and 50.50.50.2.",
+          "source": null
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": [
+        "Router-1 connects to Router-0 via Serial2/0 (Se2/0) with IP addresses 40.40.40.1 and 40.40.40.2.",
+        "Router-1 connects to Router-2 via Serial3/0 (Se3/0) with IP addresses 50.50.50.1 and 50.50.50.2."
+      ]
+    },
+    {
+      "question": "Which serial interfaces connect Router-1 to the other routers?",
+      "mode": "verify",
+      "returned": 2,
+      "dropped": 0,
+      "unsupported": 2,
+      "hallucination": 1.0,
+      "fact_recall": 1.0,
+      "memory_tokens": 26,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "Router-1 connects to Router-0 via Serial2/0 (Se2/0).",
+          "source": "snapshot"
+        },
+        {
+          "text": "Router-1 connects to Router-2 via Serial3/0 (Se3/0).",
+          "source": "snapshot"
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": [
+        "Router-1 connects to Router-0 via Serial2/0 (Se2/0).",
+        "Router-1 connects to Router-2 via Serial3/0 (Se3/0)."
+      ]
+    },
+    {
+      "question": "Which serial interfaces connect Router-1 to the other routers?",
+      "mode": "archive",
+      "returned": 2,
+      "dropped": 0,
+      "unsupported": 2,
+      "hallucination": 1.0,
+      "fact_recall": 0.0,
+      "memory_tokens": 48,
+      "verification_failed": false,
+      "kept": [
+        {
+          "text": "Router-1 connects to Router-0 via Serial2/0 (Se2/0) with IP addresses 40.40.40.1 and 40.40.40.2.",
+          "source": "snapshot"
+        },
+        {
+          "text": "Router-1 connects to Router-2 via Serial3/0 (Se3/0) with IP addresses 50.50.50.1 and 50.50.50.2.",
+          "source": "snapshot"
+        }
+      ],
+      "dropped_sentences": [],
+      "unsupported_sentences": [
+        "Router-1 connects to Router-0 via Serial2/0 (Se2/0) with IP addresses 40.40.40.1 and 40.40.40.2.",
+        "Router-1 connects to Router-2 via Serial3/0 (Se3/0) with IP addresses 50.50.50.1 and 50.50.50.2."
+      ]
+    },
+    {
+      "question": "What OSPF area is configured on Router-1?",
+      "mode": "snapshot",
+      "returned": 0,
+      "dropped": 0,
+      "unsupported": 0,
+      "hallucination": 0.0,
+      "fact_recall": null,
+      "memory_tokens": 0,
+      "verification_failed": false,
+      "kept": [],
+      "dropped_sentences": [],
+      "unsupported_sentences": []
+    },
+    {
+      "question": "What OSPF area is configured on Router-1?",
+      "mode": "evidence",
+      "returned": 0,
+      "dropped": 0,
+      "unsupported": 0,
+      "hallucination": 0.0,
+      "fact_recall": null,
+      "memory_tokens": 0,
+      "verification_failed": false,
+      "kept": [],
+      "dropped_sentences": [],
+      "unsupported_sentences": []
+    },
+    {
+      "question": "What OSPF area is configured on Router-1?",
+      "mode": "verify",
+      "returned": 0,
+      "dropped": 0,
+      "unsupported": 0,
+      "hallucination": 0.0,
+      "fact_recall": null,
+      "memory_tokens": 0,
+      "verification_failed": false,
+      "kept": [],
+      "dropped_sentences": [],
+      "unsupported_sentences": []
+    },
+    {
+      "question": "What OSPF area is configured on Router-1?",
+      "mode": "archive",
+      "returned": 0,
+      "dropped": 0,
+      "unsupported": 0,
+      "hallucination": 0.0,
+      "fact_recall": null,
+      "memory_tokens": 0,
+      "verification_failed": false,
+      "kept": [],
+      "dropped_sentences": [],
+      "unsupported_sentences": []
+    }
+  ]
+}

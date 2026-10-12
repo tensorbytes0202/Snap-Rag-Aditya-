@@ -2,7 +2,7 @@ import json
 import logging
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -13,6 +13,7 @@ from app.services.query_service import process_query
 from app.services.query_graph import stream_query
 from app.services.document_registry import get_active_document
 from app.services.session_store import append_turn, chat_exists, get_turns
+from app.services.snapshot_engine import after_turn
 
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ def _recent_history(user_id: str, chat_id: str | None) -> list[dict]:
 @router.post("/query")
 def query_document(
     request: QueryRequest,
+    background_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user_id),
 ):
 
@@ -87,6 +89,9 @@ def query_document(
             confidence=response.get("confidence"),
         )
 
+        # Context check + snapshot run after the answer is sent.
+        background_tasks.add_task(after_turn, user_id, request.chat_id)
+
     return response
 
 
@@ -95,15 +100,18 @@ def _sse(event: dict) -> str:
 
 
 def _sse_events(question: str, active_document: str | None, history: list, record=None):
-    """`record(answer)` is called once a complete answer has streamed, to
-    store the turn; it is skipped when the stream ends in an error."""
+    """`record(answer, citations)` is called once a complete answer has
+    streamed, to store the turn; it is skipped when the stream ends in an
+    error."""
 
-    tokens, failed = [], False
+    tokens, citations, failed = [], [], False
 
     try:
         for event in stream_query(question, active_document, history):
             if event["type"] == "token":
                 tokens.append(event["token"])
+            elif event["type"] == "citations":
+                citations = event["citations"]
             elif event["type"] == "error":
                 failed = True
             yield _sse(event)
@@ -119,7 +127,7 @@ def _sse_events(question: str, active_document: str | None, history: list, recor
         yield _sse({"type": "error", "message": "Something went wrong while answering. Check the backend log."})
 
     if record and tokens and not failed:
-        record("".join(tokens))
+        record("".join(tokens), citations)
 
     yield _sse({"type": "done"})
 
@@ -127,6 +135,7 @@ def _sse_events(question: str, active_document: str | None, history: list, recor
 @router.post("/query/stream")
 def query_stream(
     request: QueryRequest,
+    background_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user_id),
 ):
 
@@ -134,8 +143,15 @@ def query_stream(
 
     active_document = get_active_document(user_id)
 
-    def record(answer: str):
-        append_turn(user_id, request.chat_id, request.question, answer, document=active_document)
+    def record(answer: str, citations: list):
+        append_turn(
+            user_id, request.chat_id, request.question, answer,
+            document=active_document, citations=citations,
+        )
+
+    if request.chat_id:
+        # Runs after the stream ends; skips itself if no turn was recorded.
+        background_tasks.add_task(after_turn, user_id, request.chat_id)
 
     return StreamingResponse(
         _sse_events(request.question, active_document, history, record if request.chat_id else None),

@@ -136,6 +136,10 @@ class Settings(BaseSettings):
     def CHATS_DIR(self) -> str:
         return os.path.join(self.STORAGE_DIR, "chats")
 
+    @property
+    def MEMORY_DIR(self) -> str:
+        return os.path.join(self.STORAGE_DIR, "memory")
+
     # ==========================================
     # Chat sessions
     # ==========================================
@@ -143,6 +147,48 @@ class Settings(BaseSettings):
     # Most recent turns (question + answer) shown to the LLM so it can
     # resolve follow-ups like "what about Router-0?".
     HISTORY_TURNS: int = 3
+
+    # ==========================================
+    # Context Quality Monitor (CQM)
+    # ==========================================
+    #
+    # CIS = w_g*grounding + w_t*headroom + w_c*coherence - w_x*contradiction,
+    # measured over the turns not yet in a snapshot. A snapshot is taken
+    # when headroom < CQM_TRIGGER_HEADROOM or CIS < CQM_TRIGGER_CIS.
+    # Headroom = 1 - tokens of those turns / MEMORY_BUDGET_TOKENS.
+
+    CQM_W_GROUNDING: float = 0.35
+    CQM_W_TOKEN: float = 0.25
+    CQM_W_COHERENCE: float = 0.25
+    CQM_W_CONTRADICTION: float = 0.15
+
+    CQM_TRIGGER_HEADROOM: float = 0.20
+    CQM_TRIGGER_CIS: float = 0.55
+
+    # Budget for raw (not yet snapshotted) conversation; ~10 typical
+    # turns fill 80% of it.
+    MEMORY_BUDGET_TOKENS: int = 2000
+
+    # ==========================================
+    # Snapshot engine
+    # ==========================================
+
+    # Previous snapshots of the chat shown to the extractor as examples
+    # (self-improvement); 0 turns it off for ablations.
+    SNAPSHOT_EXEMPLARS: int = 3
+
+    SNAPSHOT_COLLECTION: str = "snapshot_memory"
+
+    # ==========================================
+    # Verified reconstruction
+    # ==========================================
+
+    # Model that rebuilds and verifies memory; empty means LLM_MODEL.
+    RECONSTRUCTION_MODEL: str = ""
+
+    # Cap on document text (from the snapshot's page anchors) sent along
+    # with a snapshot; ~3k tokens.
+    EVIDENCE_MAX_CHARS: int = 12000
 
     # ==========================================
     # Pydantic Settings

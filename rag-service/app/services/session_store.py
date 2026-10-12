@@ -25,20 +25,86 @@ _lock = threading.Lock()
 _CHAT_ID = re.compile(r"[0-9a-f]{32}")
 
 
+def user_key(user_id: str) -> str:
+    """Folder name for a user. The id comes from the JWT; hashed so it is
+    always a safe folder name."""
+
+    return hashlib.sha256(user_id.encode()).hexdigest()[:16]
+
+
+def is_chat_id(chat_id) -> bool:
+
+    return isinstance(chat_id, str) and _CHAT_ID.fullmatch(chat_id) is not None
+
+
 def _user_dir(user_id: str) -> str:
 
-    # The user id comes from the JWT; hashed so it is always a safe folder name.
-    return os.path.join(settings.CHATS_DIR, hashlib.sha256(user_id.encode()).hexdigest()[:16])
+    return os.path.join(settings.CHATS_DIR, user_key(user_id))
 
 
 def _chat_path(user_id: str, chat_id: str) -> str | None:
     """None for a malformed chat id, so a request can never reach a path
     outside the user's own folder."""
 
-    if not isinstance(chat_id, str) or not _CHAT_ID.fullmatch(chat_id):
+    if not is_chat_id(chat_id):
         return None
 
     return os.path.join(_user_dir(user_id), chat_id + ".jsonl")
+
+
+# ==========================================================
+# Append-only JSONL (also used for the CQM log)
+# ==========================================================
+
+def read_jsonl(path: str) -> list[dict]:
+
+    if not os.path.isfile(path):
+        return []
+
+    records = []
+
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            try:
+                records.append(json.loads(line))
+            except ValueError:
+                # Only a crash mid-write can leave a partial line; skip it
+                # rather than make the whole file unreadable.
+                _log.warning("Skipping unreadable line in %s", os.path.basename(path))
+
+    return records
+
+
+def append_jsonl(path: str, record: dict) -> None:
+
+    # Start on a fresh line even if a crash left a partial one behind,
+    # otherwise this record would be glued onto it and lost too.
+    prefix = "" if _ends_with_newline(path) else "\n"
+
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(prefix + json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def _ends_with_newline(path: str) -> bool:
+
+    if not os.path.isfile(path):
+        return True
+
+    with open(path, "rb") as f:
+
+        if f.seek(0, os.SEEK_END) == 0:
+            return True
+
+        f.seek(-1, os.SEEK_END)
+
+        return f.read(1) == b"\n"
+
+
+# ==========================================================
+# Chats
+# ==========================================================
 
 
 def create_chat(user_id: str) -> str:
@@ -63,23 +129,7 @@ def get_turns(user_id: str, chat_id: str) -> list[dict]:
 
     path = _chat_path(user_id, chat_id)
 
-    if path is None or not os.path.isfile(path):
-        return []
-
-    turns = []
-
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            if not line.strip():
-                continue
-            try:
-                turns.append(json.loads(line))
-            except ValueError:
-                # Only a crash mid-write can leave a partial line; skip it
-                # rather than make the whole chat unreadable.
-                _log.warning("Skipping unreadable line in chat %s", chat_id)
-
-    return turns
+    return [] if path is None else read_jsonl(path)
 
 
 def append_turn(user_id: str, chat_id: str, question: str, answer: str, **extra) -> dict:
@@ -98,26 +148,9 @@ def append_turn(user_id: str, chat_id: str, question: str, answer: str, **extra)
             **extra,
         }
 
-        # Start on a fresh line even if a crash left a partial one behind,
-        # otherwise this turn would be glued onto it and lost too.
-        prefix = "" if _ends_with_newline(path) else "\n"
-
-        with open(path, "a", encoding="utf-8") as f:
-            f.write(prefix + json.dumps(turn, ensure_ascii=False) + "\n")
+        append_jsonl(path, turn)
 
     return turn
-
-
-def _ends_with_newline(path: str) -> bool:
-
-    with open(path, "rb") as f:
-
-        if f.seek(0, os.SEEK_END) == 0:
-            return True
-
-        f.seek(-1, os.SEEK_END)
-
-        return f.read(1) == b"\n"
 
 
 def list_chats(user_id: str) -> list[dict]:
@@ -134,7 +167,7 @@ def list_chats(user_id: str) -> list[dict]:
 
         chat_id = name.removesuffix(".jsonl")
 
-        if not name.endswith(".jsonl") or not _CHAT_ID.fullmatch(chat_id):
+        if not name.endswith(".jsonl") or not is_chat_id(chat_id):
             continue
 
         turns = get_turns(user_id, chat_id)

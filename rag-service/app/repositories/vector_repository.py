@@ -6,6 +6,7 @@ from qdrant_client.models import (
     FieldCondition,
     Filter,
     FilterSelector,
+    MatchAny,
     MatchValue,
     PointStruct,
     VectorParams,
@@ -427,3 +428,40 @@ def search_similar_chunks(
         _log.debug("First result payload: %s", search_result.points[0].payload)
 
     return search_result.points
+
+
+# ==========================================================
+# Page Texts (anchor lookup)
+# ==========================================================
+
+def get_page_texts(document_name: str, pages: list[int]) -> dict[int, str]:
+    """Full text of the given pages of a document, from the stored parent
+    chunks: {page: text}. Pages that aren't indexed are left out."""
+
+    if not pages:
+        return {}
+
+    points, _ = client.scroll(
+        collection_name=COLLECTION_NAME,
+        scroll_filter=Filter(must=[
+            FieldCondition(key="document_name", match=MatchValue(value=document_name)),
+            FieldCondition(key="page", match=MatchAny(any=list(pages))),
+        ]),
+        limit=len(pages) * 100,
+        with_payload=["page", "parent_id", "parent_text"],
+    )
+
+    # A page longer than one parent chunk has several parents; children
+    # repeat their parent's text, so keep each parent once.
+    parents = {}
+
+    for point in points:
+        payload = point.payload or {}
+        parents[(payload.get("page"), payload.get("parent_id"))] = payload.get("parent_text", "")
+
+    texts = {}
+
+    for (page, _), text in sorted(parents.items(), key=lambda item: (item[0][0], str(item[0][1]))):
+        texts[page] = (texts.get(page, "") + "\n" + text).strip()
+
+    return texts

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.security import get_current_user_id
 from app.services.session_store import chat_exists, create_chat, get_turns, list_chats
+from app.services.snapshot_store import list_snapshots, read_cqm
 
 
 router = APIRouter()
@@ -28,3 +29,17 @@ def chat_messages(chat_id: str, user_id: str = Depends(get_current_user_id)):
         raise HTTPException(status_code=404, detail="Chat not found.")
 
     return {"chat_id": chat_id, "turns": get_turns(user_id, chat_id)}
+
+
+@router.get("/chats/{chat_id}/memory")
+def chat_memory(chat_id: str, user_id: str = Depends(get_current_user_id)):
+    """The context-monitor log (one entry per turn) and the snapshots."""
+
+    if not chat_exists(user_id, chat_id):
+        raise HTTPException(status_code=404, detail="Chat not found.")
+
+    return {
+        "chat_id": chat_id,
+        "cqm": read_cqm(user_id, chat_id),
+        "snapshots": list_snapshots(user_id, chat_id),
+    }

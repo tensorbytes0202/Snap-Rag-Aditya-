@@ -2,7 +2,7 @@
 
 Only streaming lives here. Retrieval is query_runner.run_retrieval and the
 tokens come from generation_service.stream_answer. Nodes emit plain event
-dicts (step / token / error); the route adds the SSE framing.
+dicts (step / citations / token / error); the route adds the SSE framing.
 """
 
 import logging
@@ -13,6 +13,7 @@ from langgraph.types import StreamWriter
 
 from app.services.generation_service import stream_answer
 from app.services.query_runner import run_retrieval
+from app.services.retrieval_pipeline import build_citations
 
 
 _log = logging.getLogger(__name__)
@@ -41,6 +42,9 @@ def retrieve(state: State, writer: StreamWriter):
     if not found.ranked_chunks:
         writer({"type": "error", "message": "No relevant information found."})
         return {}
+
+    # Page anchors for the chat record (snapshots cite them later).
+    writer({"type": "citations", "citations": build_citations(found.sources)})
 
     return {"query_type": found.query_type, "context": found.top_context}
 
