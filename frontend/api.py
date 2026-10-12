@@ -79,16 +79,20 @@ class SnapRagClient:
         files = {"file": (filename, data, "application/pdf")}
         return self._request("POST", "/upload", timeout=(5, 900), files=files).json()
 
-    def query(self, question: str) -> dict:
-        return self._request("POST", "/query", timeout=(5, 180), json={"question": question}).json()
+    def create_chat(self) -> str:
+        return self._request("POST", "/chats", timeout=10).json()["chat_id"]
 
-    def stream(self, question: str) -> Iterator[dict]:
+    def query(self, question: str, chat_id: str | None = None) -> dict:
+        body = {"question": question, "chat_id": chat_id}
+        return self._request("POST", "/query", timeout=(5, 180), json=body).json()
+
+    def stream(self, question: str, chat_id: str | None = None) -> Iterator[dict]:
         connected = False
 
         try:
             with requests.post(
                 self.base + "/query/stream",
-                json={"question": question},
+                json={"question": question, "chat_id": chat_id},
                 headers=self.headers,
                 stream=True,
                 timeout=(5, 120),

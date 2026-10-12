@@ -24,6 +24,7 @@ for key, default in {
     "docs": None,
     "docs_error": None,
     "uploader_n": 0,
+    "chat_id": None,
 }.items():
     st.session_state.setdefault(key, default)
 
@@ -39,9 +40,25 @@ def client() -> SnapRagClient:
     return SnapRagClient(st.session_state.api_url, st.session_state.token)
 
 
-def reset_docs():
+def reset_connection():
     st.session_state.docs = None
     st.session_state.docs_error = None
+    # A chat belongs to one backend and one user (token).
+    st.session_state.chat_id = None
+
+
+def current_chat() -> str | None:
+    """The server-side chat for this conversation, created on the first
+    question. None if that fails: the question is still answered, just
+    without history."""
+
+    if st.session_state.chat_id is None:
+        try:
+            st.session_state.chat_id = client().create_chat()
+        except ApiError:
+            return None
+
+    return st.session_state.chat_id
 
 
 def refresh_docs():
@@ -87,7 +104,7 @@ def confidence_badge(value):
 
 # ---------- answering ----------
 
-def answer_stream(question: str) -> dict:
+def answer_stream(question: str, chat_id: str | None) -> dict:
     """Stream the answer live; progress steps go into a compact status above it."""
 
     steps, errors = [], []
@@ -96,7 +113,7 @@ def answer_stream(question: str) -> dict:
 
     def tokens():
         try:
-            for event in client().stream(question):
+            for event in client().stream(question, chat_id):
                 if event["type"] == "token":
                     yield event["token"]
                 elif event["type"] == "step":
@@ -120,11 +137,11 @@ def answer_stream(question: str) -> dict:
             "elapsed": elapsed, "error": "; ".join(errors) or None}
 
 
-def answer_batch(question: str) -> dict:
+def answer_batch(question: str, chat_id: str | None) -> dict:
     started = time.perf_counter()
     with st.spinner("Searching and writing an answer..."):
         try:
-            result = client().query(question)
+            result = client().query(question, chat_id)
         except ApiError as exc:
             return {"role": "assistant", "content": "", "error": str(exc)}
 
@@ -188,9 +205,9 @@ with st.sidebar:
     st.caption("Ask questions about your PDFs")
 
     with st.expander("Connection", icon=":material/lan:", expanded=not os.getenv("SNAPRAG_TOKEN")):
-        st.text_input("Backend URL", value=DEFAULT_URL, key="api_url", on_change=reset_docs)
+        st.text_input("Backend URL", value=DEFAULT_URL, key="api_url", on_change=reset_connection)
         st.text_input("Access token", value=os.getenv("SNAPRAG_TOKEN", ""), type="password",
-                      key="token", on_change=reset_docs,
+                      key="token", on_change=reset_connection,
                       help="Run `python dev_token.py` in rag-service to get one.")
     if backend_up(st.session_state.api_url):
         st.badge("Backend online", icon=":material/check_circle:", color="green")
@@ -237,6 +254,7 @@ with st.sidebar:
     if st.button("Clear chat", icon=":material/delete_sweep:", width="stretch",
                  disabled=not st.session_state.messages):
         st.session_state.messages = []
+        st.session_state.chat_id = None
         st.rerun()
 
 if flash := st.session_state.pop("flash", None):
@@ -279,10 +297,11 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
+        chat_id = current_chat()
         if st.session_state.stream:
-            reply = answer_stream(prompt)
+            reply = answer_stream(prompt, chat_id)
         else:
-            reply = answer_batch(prompt)
+            reply = answer_batch(prompt, chat_id)
             render_assistant(len(st.session_state.messages), reply)
 
     st.session_state.messages.append(reply)

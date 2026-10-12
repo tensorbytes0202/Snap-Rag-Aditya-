@@ -321,6 +321,12 @@ SESSION: SESSION_TTL_SECONDS, HANDOFF_MAX_TOKENS=600, CONTEXT_BUDGET_TOKENS=... 
 - **Verify**: `pytest` still green.
 
 ### Phase 1 — Sessions & persistence (1–2 days)
+> Status: DONE (Oct 12). Built with an append-only JSONL file per chat
+> (`storage/chats/<user>/<chat_id>.jsonl`, `services/session_store.py`) instead of Redis:
+> Redis is a fail-open cache here, while this log must be durable and never rewritten,
+> because it is the cold archive that Phase 2b verifies against. Last 3 turns go into the
+> generation prompt; turns store document, citations (page anchors), verified, confidence.
+> Retrieval still uses the bare question (pronoun-only follow-ups are a Phase 3 concern).
 - `POST /chats`, `GET /chats/{id}`, `GET /chats/{id}/messages`.
 - Redis-backed conversation store (append-only turns per session; TTL).
 - Replace `chat_memory` usage in `generation_prompt` with per-session history.
@@ -477,7 +483,7 @@ claiming novelty, and have a second person review the related-work table.
 ## Quick Start Checklist
 
 - [ ] Phase 0 cleanup + shared `query_runner` + docker-compose
-- [ ] Phase 1 sessions (Redis) + per-session history
+- [x] Phase 1 sessions (append-only JSONL per chat) + per-session history
 - [ ] Phase 2 CQM + snapshot engine (immutable, versioned, exemplars)
 - [ ] Phase 3 SMS-AR recall + λ-blend + fused context
 - [ ] Phase 4 confidence-gated self-correction loop
