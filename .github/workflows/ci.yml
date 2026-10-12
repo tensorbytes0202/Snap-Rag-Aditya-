@@ -59,4 +59,3 @@ jobs:
 
       - name: Check Streamlit app
         run: python -m py_compile app.py api.py
-```
