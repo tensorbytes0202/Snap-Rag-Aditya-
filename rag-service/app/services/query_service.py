@@ -6,6 +6,7 @@ from app.cache.cache_service import get_cache, set_cache
 from app.services.confidence_service import calculate_confidence
 from app.services.followup_service import generate_followups
 from app.services.generation_service import generate_answer
+from app.services.memory_retriever import memory_block, recall_memory
 from app.services.query_runner import run_retrieval
 from app.services.response_builder import (
     build_failure_response,
@@ -29,7 +30,10 @@ def process_query(
     question: str,
     active_document: str | None = None,
     history=None,
+    session: tuple[str, str] | None = None,
 ):
+    """`session` = (user_id, chat_id) of a chat: its verified snapshot
+    memory is recalled and fused with the document context."""
 
     _log.info("RAG query started (document=%s)", active_document)
 
@@ -42,7 +46,9 @@ def process_query(
         f"::{question.strip().lower()}"
     )
 
-    cached_response = None if history else get_cache(cache_key)
+    use_cache = not history and not session
+
+    cached_response = get_cache(cache_key) if use_cache else None
 
     if cached_response:
         _log.info("Returning response from Redis cache")
@@ -53,7 +59,11 @@ def process_query(
     if not found.ranked_chunks:
         return build_failure_response(question, found.rewritten_question)
 
-    top_context = found.top_context
+    memory = recall_memory(*session, question, active_document, found.top_context) if session else None
+
+    # Fused context: documents plus verified memory. The answer check gets
+    # the same context, so an answer drawn from memory can be verified.
+    top_context = found.top_context + memory_block(memory)
 
     answer = generate_answer(question, top_context, found.query_type, history)
 
@@ -80,9 +90,10 @@ def process_query(
         hybrid_chunks=found.hybrid_chunks,
         sources=found.sources,
         citations=build_citations(found.sources),
+        memory=memory,
     )
 
-    if not history:
+    if use_cache:
         set_cache(cache_key, response)
 
     return response

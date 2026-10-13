@@ -66,6 +66,7 @@ def query_document(
             request.question,
             active_document,
             history,
+            (user_id, request.chat_id) if request.chat_id else None,
         )
     except LLMProviderError:
         logger.exception("Language model request failed")
@@ -99,7 +100,7 @@ def _sse(event: dict) -> str:
     return "data: " + json.dumps(event) + "\n\n"
 
 
-def _sse_events(question: str, active_document: str | None, history: list, record=None):
+def _sse_events(question: str, active_document: str | None, history: list, session=None, record=None):
     """`record(answer, citations)` is called once a complete answer has
     streamed, to store the turn; it is skipped when the stream ends in an
     error."""
@@ -107,7 +108,7 @@ def _sse_events(question: str, active_document: str | None, history: list, recor
     tokens, citations, failed = [], [], False
 
     try:
-        for event in stream_query(question, active_document, history):
+        for event in stream_query(question, active_document, history, session):
             if event["type"] == "token":
                 tokens.append(event["token"])
             elif event["type"] == "citations":
@@ -154,7 +155,13 @@ def query_stream(
         background_tasks.add_task(after_turn, user_id, request.chat_id)
 
     return StreamingResponse(
-        _sse_events(request.question, active_document, history, record if request.chat_id else None),
+        _sse_events(
+            request.question,
+            active_document,
+            history,
+            (user_id, request.chat_id) if request.chat_id else None,
+            record if request.chat_id else None,
+        ),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

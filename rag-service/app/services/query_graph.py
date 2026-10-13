@@ -1,8 +1,9 @@
-"""Streaming query as a two-node LangGraph: retrieve -> generate.
+"""Streaming query as a LangGraph: retrieve -> recall -> generate.
 
-Only streaming lives here. Retrieval is query_runner.run_retrieval and the
-tokens come from generation_service.stream_answer. Nodes emit plain event
-dicts (step / citations / token / error); the route adds the SSE framing.
+Only streaming lives here. Retrieval is query_runner.run_retrieval, memory
+is memory_retriever.recall_memory (chats only) and the tokens come from
+generation_service.stream_answer. Nodes emit plain event dicts
+(step / citations / token / error); the route adds the SSE framing.
 """
 
 import logging
@@ -12,6 +13,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import StreamWriter
 
 from app.services.generation_service import stream_answer
+from app.services.memory_retriever import memory_block, recall_memory
 from app.services.query_runner import run_retrieval
 from app.services.retrieval_pipeline import build_citations
 
@@ -24,6 +26,7 @@ class State(TypedDict, total=False):
     question: str
     active_document: str | None
     history: list
+    session: tuple | None
     query_type: str
     context: str
 
@@ -49,6 +52,26 @@ def retrieve(state: State, writer: StreamWriter):
     return {"query_type": found.query_type, "context": found.top_context}
 
 
+def recall(state: State, writer: StreamWriter):
+    """Fuse verified snapshot memory into the context (chats only)."""
+
+    if not state.get("context") or not state.get("session"):
+        return {}
+
+    writer({"type": "step", "message": "Recalling verified memory of earlier turns"})
+
+    memory = recall_memory(*state["session"], state["question"], state.get("active_document"), state["context"])
+
+    if memory:
+        writer({"type": "step", "message": "Memory recalled", "detail": {
+            "lambda": memory["lambda"],
+            "snapshots": len(memory["snapshots"]),
+            "sentences": len(memory["sentences"]),
+        }})
+
+    return {"context": state["context"] + memory_block(memory)}
+
+
 def generate(state: State, writer: StreamWriter):
 
     if not state.get("context"):
@@ -72,17 +95,25 @@ def generate(state: State, writer: StreamWriter):
 _graph = (
     StateGraph(State)
     .add_node("retrieve", retrieve)
+    .add_node("recall", recall)
     .add_node("generate", generate)
     .add_edge(START, "retrieve")
-    .add_edge("retrieve", "generate")
+    .add_edge("retrieve", "recall")
+    .add_edge("recall", "generate")
     .add_edge("generate", END)
     .compile(name="rag_query_stream")
 )
 
 
-def stream_query(question: str, active_document: str | None = None, history=None):
+def stream_query(question: str, active_document: str | None = None, history=None, session=None):
+    """`session` = (user_id, chat_id) of a chat, for memory recall."""
 
     yield from _graph.stream(
-        {"question": question, "active_document": active_document, "history": history or []},
+        {
+            "question": question,
+            "active_document": active_document,
+            "history": history or [],
+            "session": session,
+        },
         stream_mode="custom",
     )

@@ -191,6 +191,31 @@ class Settings(BaseSettings):
     EVIDENCE_MAX_CHARS: int = 12000
 
     # ==========================================
+    # Memory recall during answering (SMS-AR)
+    # ==========================================
+    #
+    # lambda(t) = sigmoid(LAMBDA_BETA * (t - LAMBDA_THETA)), t = turn number.
+    # Verified memory may use up to lambda(t) * MEMORY_CONTEXT_TOKENS of the
+    # prompt; the document context is not reduced.
+
+    LAMBDA_BETA: float = 0.08
+    LAMBDA_THETA: float = 8
+
+    # Ablation: a constant lambda instead of the sigmoid.
+    LAMBDA_FIXED: float | None = None
+
+    MEMORY_CONTEXT_TOKENS: int = 600
+
+    # Snapshots recalled per question, and the minimum question/snapshot
+    # cosine similarity for a snapshot to be considered at all.
+    SMS_TOP_K: int = 3
+    SMS_MIN_SIMILARITY: float = 0.5
+
+    # "off" (no memory: the baseline) or a reconstruction mode
+    # ("snapshot", "evidence", "verify", "archive" = full method).
+    MEMORY_RECALL_MODE: str = "archive"
+
+    # ==========================================
     # Pydantic Settings
     # ==========================================
 

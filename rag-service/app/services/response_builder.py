@@ -14,6 +14,7 @@ def build_success_response(
     hybrid_chunks,
     sources,
     citations,
+    memory=None,
 ):
 
     return {
@@ -28,6 +29,8 @@ def build_success_response(
         "retrieved_hybrid": len(hybrid_chunks),
         "sources": sources[:5],
         "citations": citations,
+        # Verified snapshot memory used for this answer (None outside a chat).
+        "retrieved_memory": memory,
     }
 
 
