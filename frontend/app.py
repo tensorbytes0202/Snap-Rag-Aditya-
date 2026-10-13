@@ -3,54 +3,111 @@ import time
 
 import streamlit as st
 
-from api import ApiError, SnapRagClient, ping
+from api import ApiError, SnapRagClient, ping, start_guest
 
 st.set_page_config(
     page_title="SnapRAG",
     page_icon=":material/neurology:",
-    layout="wide",
+    layout="centered",
 )
 
-DEFAULT_URL = os.getenv("SNAPRAG_API_URL", "http://localhost:8003")
-SUGGESTIONS = [
-    "Summarize this document in five bullet points",
-    "What are the key concepts covered?",
-    "List the important definitions",
-    "Explain the main topic step by step",
+# The backend URL comes from the environment (or Streamlit secrets in the
+# cloud), never from the page, so reviewers only see the product.
+API_URL = os.getenv("SNAPRAG_API_URL", "http://localhost:8003")
+GITHUB_URL = "https://github.com/tensorbytes0202/Snap-Rag-Aditya-"
+
+SUGGESTIONS = {
+    ":material/summarize: Summarize it": "Summarize this document in five bullet points",
+    ":material/key: Key concepts": "What are the key concepts covered?",
+    ":material/menu_book: Definitions": "List the important definitions",
+    ":material/stairs: Step by step": "Explain the main topic step by step",
+}
+
+FEATURES = [
+    (":material/document_scanner:", "Reads every page",
+     "Text, screenshots and diagrams are all indexed; image-heavy pages are read by a vision model."),
+    (":material/manage_search:", "Hybrid search",
+     "Dense and keyword search, fused and reranked, with page citations on every answer."),
+    (":material/verified:", "Verified memory",
+     "Long chats are compressed into snapshots; anything recalled is checked against the source first."),
 ]
 
 for key, default in {
+    "token": os.getenv("SNAPRAG_TOKEN", ""),
     "messages": [],
-    "docs": None,
-    "docs_error": None,
-    "uploader_n": 0,
     "chat_id": None,
+    "docs": None,
+    "usage": None,
+    "notice": None,
+    "uploader_n": 0,
+    "stream": True,
 }.items():
     st.session_state.setdefault(key, default)
 
 
 # ---------- helpers ----------
 
-@st.cache_data(ttl=5, show_spinner=False)
-def backend_up(url: str) -> bool:
-    return ping(url)
+@st.cache_data(ttl=10, show_spinner=False)
+def backend_up() -> bool:
+    return ping(API_URL)
 
 
 def client() -> SnapRagClient:
-    return SnapRagClient(st.session_state.api_url, st.session_state.token)
+    return SnapRagClient(API_URL, st.session_state.token)
 
 
-def reset_connection():
-    st.session_state.docs = None
-    st.session_state.docs_error = None
-    # A chat belongs to one backend and one user (token).
+def sign_out(notice: str | None = None):
+    st.session_state.token = ""
+    st.session_state.messages = []
     st.session_state.chat_id = None
+    st.session_state.docs = None
+    st.session_state.usage = None
+    st.session_state.notice = notice
+
+
+def new_chat():
+    st.session_state.messages = []
+    st.session_state.chat_id = None
+
+
+def handle(exc: ApiError) -> str:
+    """React to an API error and return the message to show."""
+
+    if exc.status == 401:
+        sign_out("Your session has expired. Start a new one to continue.")
+        st.rerun()
+
+    if exc.status == 429:
+        refresh()
+
+    return str(exc)
+
+
+def refresh():
+    """Reload the caller's documents and remaining demo allowance."""
+
+    try:
+        st.session_state.docs = client().documents()
+        st.session_state.usage = client().usage()
+    except ApiError as exc:
+        if exc.status == 401:
+            sign_out("That access token is not valid. Start a demo or paste a valid token.")
+        else:
+            st.session_state.notice = str(exc)
+
+
+def choose_document():
+    try:
+        client().select_document(st.session_state.doc_choice)
+    except ApiError as exc:
+        st.session_state.notice = handle(exc)
+    refresh()
 
 
 def current_chat() -> str | None:
     """The server-side chat for this conversation, created on the first
     question. None if that fails: the question is still answered, just
-    without history."""
+    without history or memory."""
 
     if st.session_state.chat_id is None:
         try:
@@ -61,32 +118,13 @@ def current_chat() -> str | None:
     return st.session_state.chat_id
 
 
-def refresh_docs():
-    if not st.session_state.token.strip():
-        st.session_state.docs, st.session_state.docs_error = None, None
-        return
-    try:
-        st.session_state.docs, st.session_state.docs_error = client().documents(), None
-    except ApiError as exc:
-        st.session_state.docs, st.session_state.docs_error = None, str(exc)
-
-
-def choose_document():
-    try:
-        client().select_document(st.session_state.doc_choice)
-    except ApiError as exc:
-        st.session_state.docs_error = str(exc)
-        return
-    refresh_docs()
-
-
 def ask(question: str):
     st.session_state.pending = question
 
 
 def pick_suggestion():
     if st.session_state.suggestion:
-        ask(st.session_state.suggestion)
+        ask(SUGGESTIONS[st.session_state.suggestion])
     st.session_state.suggestion = None
 
 
@@ -102,12 +140,77 @@ def confidence_badge(value):
     st.badge(f"Confidence {pct:.0f}%", icon=":material/speed:", color=color)
 
 
+# ---------- welcome (no token yet) ----------
+
+def welcome():
+    st.space("medium")
+
+    with st.container(horizontal_alignment="center"):
+        st.title("SnapRAG", icon=":material/neurology:", text_alignment="center")
+        st.markdown("#### Chat with your PDFs, with memory you can trust", text_alignment="center")
+        st.caption(
+            "Upload a document and ask questions in a conversation. Answers cite their pages, and "
+            "long chats are remembered through verified snapshots instead of being forgotten.",
+            text_alignment="center",
+        )
+
+    st.space("small")
+
+    for column, (icon, title, body) in zip(st.columns(3), FEATURES):
+        with column.container(border=True, height="stretch"):
+            st.markdown(f"### {icon}")
+            st.markdown(f"**{title}**")
+            st.caption(body)
+
+    st.space("small")
+
+    with st.container(horizontal_alignment="center"):
+        if st.button("Start free demo", type="primary", icon=":material/rocket_launch:"):
+            try:
+                session = start_guest(API_URL, st.context.ip_address)
+            except ApiError as exc:
+                st.error(str(exc), icon=":material/error:")
+            else:
+                st.session_state.token = session["token"]
+                st.session_state.usage = session["limits"]
+                st.rerun()
+        st.caption("No sign-up needed. A demo session includes a small allowance of questions and uploads.",
+                   text_alignment="center")
+
+    with st.expander("I have an access token", icon=":material/key:"):
+        with st.form("token_form", border=False):
+            token = st.text_input("Access token", type="password", placeholder="Paste your token",
+                                  label_visibility="collapsed")
+            if st.form_submit_button("Connect", icon=":material/login:"):
+                st.session_state.token = token.strip()
+                st.rerun()
+
+    if not backend_up():
+        st.warning("The service is offline right now. Please try again in a few minutes.",
+                   icon=":material/cloud_off:")
+
+    st.caption(f"[Source code on GitHub]({GITHUB_URL})", text_alignment="center")
+
+
+if notice := st.session_state.pop("notice", None):
+    st.toast(notice, icon=":material/info:")
+
+if not st.session_state.token:
+    welcome()
+    st.stop()
+
+if st.session_state.docs is None:
+    refresh()
+    if not st.session_state.token:   # refresh signed us out (bad token)
+        st.rerun()
+
+
 # ---------- answering ----------
 
 def answer_stream(question: str, chat_id: str | None) -> dict:
     """Stream the answer live; progress steps go into a compact status above it."""
 
-    steps, errors = [], []
+    steps, errors, memory = [], [], {}
     started = time.perf_counter()
     status = st.status(":shimmer[Searching the document]", type="compact")
 
@@ -119,10 +222,12 @@ def answer_stream(question: str, chat_id: str | None) -> dict:
                 elif event["type"] == "step":
                     steps.append(describe_step(event))
                     status.write(steps[-1])
+                    if event["message"] == "Memory recalled":
+                        memory.update(event.get("detail") or {})
                 elif event["type"] == "error":
                     errors.append(event["message"])
         except ApiError as exc:
-            errors.append(str(exc))
+            errors.append(handle(exc))
 
     text = st.write_stream(tokens())
     elapsed = time.perf_counter() - started
@@ -133,8 +238,9 @@ def answer_stream(question: str, chat_id: str | None) -> dict:
     for message in errors:
         st.error(message, icon=":material/error:")
 
-    return {"role": "assistant", "content": str(text), "steps": steps,
-            "elapsed": elapsed, "error": "; ".join(errors) or None}
+    return {"role": "assistant", "content": str(text) if text else "", "steps": steps,
+            "elapsed": elapsed, "memory_count": memory.get("sentences", 0),
+            "error": "; ".join(errors) or None}
 
 
 def answer_batch(question: str, chat_id: str | None) -> dict:
@@ -143,19 +249,21 @@ def answer_batch(question: str, chat_id: str | None) -> dict:
         try:
             result = client().query(question, chat_id)
         except ApiError as exc:
-            return {"role": "assistant", "content": "", "error": str(exc)}
+            return {"role": "assistant", "content": "", "error": handle(exc)}
 
     verification = result.get("verification")
+    memory = result.get("retrieved_memory") or {}
     return {
         "role": "assistant",
         "content": result.get("answer", ""),
         "elapsed": time.perf_counter() - started,
         "confidence": result.get("confidence"),
         "verified": verification.get("supported") if isinstance(verification, dict) else None,
-        "counts": {k: result.get(f"retrieved_{k}") for k in ("dense", "bm25", "hybrid")},
         "citations": result.get("citations") or [],
         "sources": result.get("sources") or [],
         "followups": result.get("followup_questions") or [],
+        "memory": memory.get("sentences") or [],
+        "memory_count": len(memory.get("sentences") or []),
     }
 
 
@@ -170,25 +278,28 @@ def render_assistant(index: int, message: dict):
     if message.get("error"):
         st.error(message["error"], icon=":material/error:")
 
-    badges = st.container(horizontal=True)
-    with badges:
+    with st.container(horizontal=True):
         if message.get("confidence") is not None:
             confidence_badge(message["confidence"])
         if message.get("verified") is not None:
             st.badge("Verified" if message["verified"] else "Not verified",
                      icon=":material/verified:" if message["verified"] else ":material/gpp_maybe:",
                      color="green" if message["verified"] else "red")
-        for name, value in (message.get("counts") or {}).items():
-            if value is not None:
-                st.badge(f"{name} {value}", color="gray")
+        if message.get("memory_count"):
+            st.badge(f"Used {message['memory_count']} verified memory facts", icon=":material/neurology:",
+                     color="violet")
+
+    if message.get("memory"):
+        with st.expander("Verified memory used", icon=":material/neurology:"):
+            for item in message["memory"]:
+                st.markdown(f"- {item['text']}  :gray-badge[{item.get('source') or 'memory'}]")
 
     if message.get("citations") or message.get("sources"):
         with st.expander("Sources", icon=":material/menu_book:"):
             for c in message.get("citations", []):
                 st.markdown(f"**[{c['source_id']}]** {c['document']}, page {c['page']}")
             for s in message.get("sources", []):
-                st.caption(f"{s['document']}, page {s['page']}"
-                           + (f" · rerank {s['rerank_score']:.2f}" if s.get("rerank_score") is not None else ""))
+                st.caption(f"{s['document']}, page {s['page']}")
                 st.text((s.get("text") or "")[:400])
 
     if message.get("followups"):
@@ -200,31 +311,27 @@ def render_assistant(index: int, message: dict):
 
 # ---------- sidebar ----------
 
+docs = st.session_state.docs or {"documents": [], "active_document": None}
+usage = st.session_state.usage or {"guest": False}
+guest = usage.get("guest", False)
+questions_left = usage["query_limit"] - usage["queries_used"] if guest else None
+uploads_left = usage["upload_limit"] - usage["uploads_used"] if guest else None
+
 with st.sidebar:
     st.title("SnapRAG", icon=":material/neurology:")
-    st.caption("Ask questions about your PDFs")
 
-    with st.expander("Connection", icon=":material/lan:", expanded=not os.getenv("SNAPRAG_TOKEN")):
-        st.text_input("Backend URL", value=DEFAULT_URL, key="api_url", on_change=reset_connection)
-        st.text_input("Access token", value=os.getenv("SNAPRAG_TOKEN", ""), type="password",
-                      key="token", on_change=reset_connection,
-                      help="Run `python dev_token.py` in rag-service to get one.")
-    if backend_up(st.session_state.api_url):
-        st.badge("Backend online", icon=":material/check_circle:", color="green")
+    if guest:
+        st.badge("Demo session", icon=":material/science:", color="violet")
+        st.progress(usage["queries_used"] / usage["query_limit"],
+                    text=f"Questions: {usage['queries_used']} of {usage['query_limit']} used")
+        st.progress(usage["uploads_used"] / usage["upload_limit"],
+                    text=f"PDF uploads: {usage['uploads_used']} of {usage['upload_limit']} used")
     else:
-        st.badge("Backend unreachable", icon=":material/cloud_off:", color="red")
+        st.badge("Full access", icon=":material/verified_user:", color="green")
 
-    if st.session_state.docs is None and st.session_state.docs_error is None:
-        refresh_docs()
-
-    st.subheader("Documents")
-    docs = st.session_state.docs
-    if not st.session_state.token.strip():
-        st.caption("Add your access token under Connection to load documents.")
-    elif st.session_state.docs_error:
-        st.error(st.session_state.docs_error, icon=":material/error:")
-    elif docs and docs["documents"]:
-        names = [d["name"] for d in docs["documents"]]
+    st.subheader("Documents", icon=":material/folder:")
+    names = [d["name"] for d in docs["documents"]]
+    if names:
         st.session_state.doc_choice = docs["active_document"] if docs["active_document"] in names else None
         st.radio("Active document", names, index=None, key="doc_choice", on_change=choose_document,
                  captions=[f"{d['pages']} pages · {d['chunks']} chunks" for d in docs["documents"]],
@@ -232,56 +339,68 @@ with st.sidebar:
     else:
         st.caption("No documents yet. Add a PDF below.")
 
-    with st.expander("Add a PDF", icon=":material/upload_file:"):
+    with st.expander("Add a PDF", icon=":material/upload_file:", expanded=not names):
         file = st.file_uploader("PDF file", type="pdf", key=f"pdf_{st.session_state.uploader_n}",
-                                label_visibility="collapsed")
+                                label_visibility="collapsed", disabled=uploads_left == 0)
+        if guest:
+            st.caption(f"Up to {usage['max_pages']} pages per PDF.")
         if st.button("Index document", type="primary", icon=":material/database:",
-                     disabled=file is None, width="stretch"):
-            with st.spinner("Indexing... large PDFs can take a few minutes"):
+                     disabled=file is None or uploads_left == 0, width="stretch"):
+            with st.spinner("Indexing... pages with images take a little longer"):
                 try:
                     result = client().upload(file.name, file.getvalue())
                 except ApiError as exc:
-                    st.error(str(exc), icon=":material/error:")
+                    st.error(handle(exc), icon=":material/error:")
                 else:
-                    st.session_state.flash = (f"Indexed {result['filename']}: "
-                                              f"{result['pages']} pages, {result['total_chunks']} chunks")
+                    st.session_state.notice = (f"Indexed {result['filename']}: "
+                                               f"{result['pages']} pages, {result['total_chunks']} chunks")
                     st.session_state.uploader_n += 1
-                    refresh_docs()
+                    refresh()
                     st.rerun()
 
-    st.toggle("Stream answers", value=True, key="stream",
-              help="On: live answer with progress. Off: waits for the full answer and shows sources, confidence and follow-ups.")
-    if st.button("Clear chat", icon=":material/delete_sweep:", width="stretch",
-                 disabled=not st.session_state.messages):
-        st.session_state.messages = []
-        st.session_state.chat_id = None
-        st.rerun()
+    st.toggle("Stream answers", key="stream",
+              help="On: the answer appears live. Off: wait for the full answer with sources, confidence and follow-ups.")
 
-if flash := st.session_state.pop("flash", None):
-    st.toast(flash, icon=":material/check_circle:")
+    with st.container(horizontal=True):
+        st.button("New chat", icon=":material/add_comment:", on_click=new_chat,
+                  disabled=not st.session_state.messages)
+        st.button("Sign out", icon=":material/logout:", on_click=sign_out)
+
+    st.caption(f"[Source code on GitHub]({GITHUB_URL})")
 
 
 # ---------- main ----------
 
-active = (st.session_state.docs or {}).get("active_document")
+active = docs["active_document"] if docs["active_document"] in names else None
+out_of_questions = questions_left is not None and questions_left <= 0
 
 # Read the input first: the intro card is only drawn when nothing is being asked,
 # otherwise it would stay on screen above the first answer until the next rerun.
-prompt = st.chat_input("Ask about the active document", submit_mode="disable") \
+placeholder = ("Demo limit reached" if out_of_questions
+               else "Ask about your document" if active else "Add a PDF to start asking")
+prompt = st.chat_input(placeholder, submit_mode="disable", disabled=out_of_questions or not active) \
     or st.session_state.pop("pending", None)
 
 with st.container(horizontal=True, vertical_alignment="center"):
     st.header("Chat", icon=":material/forum:")
     if active:
         st.badge(active, icon=":material/description:", color="blue")
-    else:
-        st.caption("No active document: pick or upload one in the sidebar.")
+    if guest and not out_of_questions:
+        st.badge(f"{questions_left} questions left", icon=":material/hourglass_top:", color="gray")
 
-if not st.session_state.messages and not prompt:
+if not names:
+    with st.container(border=True):
+        st.subheader("Start with a PDF", icon=":material/upload_file:")
+        st.markdown(
+            "1. Open **Add a PDF** in the sidebar and choose a file.\n"
+            "2. Press **Index document**; pages with screenshots are read by a vision model.\n"
+            "3. Ask questions here. Follow-ups work, and answers cite their pages."
+        )
+elif not st.session_state.messages and not prompt and not out_of_questions:
     with st.container(border=True):
         st.markdown("#### Ask anything about your document")
-        st.caption("Answers come from the active PDF, with page citations when streaming is off.")
-        st.pills("Try asking", SUGGESTIONS, key="suggestion", on_change=pick_suggestion,
+        st.caption("Try one of these, or type your own question below.")
+        st.pills("Try asking", list(SUGGESTIONS), key="suggestion", on_change=pick_suggestion,
                  label_visibility="collapsed")
 
 for i, message in enumerate(st.session_state.messages):
@@ -291,7 +410,11 @@ for i, message in enumerate(st.session_state.messages):
         else:
             render_assistant(i, message)
 
-if prompt:
+if out_of_questions:
+    st.info(f"You've used all {usage['query_limit']} demo questions. Thanks for trying SnapRAG! "
+            f"The full project is [on GitHub]({GITHUB_URL}).", icon=":material/celebration:")
+
+if prompt and active and not out_of_questions:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -305,3 +428,7 @@ if prompt:
             render_assistant(len(st.session_state.messages), reply)
 
     st.session_state.messages.append(reply)
+
+    if guest:
+        refresh()
+        st.rerun()

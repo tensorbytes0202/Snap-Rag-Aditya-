@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 
 from app.core.config import settings
 from app.core.security import get_current_user_id
+from app.services.document_registry import get_document_owner
 from app.services.pdf_service import validate_stored_filename
 
 
@@ -28,6 +29,11 @@ def get_pdf(
     except ValueError:
         logger.warning("Blocked path traversal attempt: %s", filename)
         raise HTTPException(status_code=400, detail="Invalid filename.")
+
+    # Only the uploader may fetch a PDF. Someone else's file is reported
+    # as missing, so names can't be probed.
+    if get_document_owner(safe_name) != user_id:
+        raise HTTPException(status_code=404, detail="PDF not found.")
 
     upload_dir = Path(settings.RAW_DATA_PATH).resolve()
     pdf_path = (upload_dir / safe_name).resolve()

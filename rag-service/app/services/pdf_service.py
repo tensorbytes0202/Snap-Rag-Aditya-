@@ -3,8 +3,20 @@ import os
 import time
 import uuid
 
+import fitz
+
 from app.core.config import settings
 from app.core.logger import logger
+
+
+def count_pages(content: bytes) -> int:
+    """Page count of an in-memory PDF; ValueError if it can't be opened."""
+
+    try:
+        with fitz.open(stream=content, filetype="pdf") as document:
+            return document.page_count
+    except Exception as exc:
+        raise ValueError("Invalid PDF content.") from exc
 
 
 # Cap the sanitized stem so the stored filename (stem + extension) can

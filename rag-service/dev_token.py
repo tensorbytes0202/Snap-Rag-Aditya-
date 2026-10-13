@@ -9,23 +9,15 @@ Run from the rag-service/ folder:
 """
 
 import sys
-import time
 
 from dotenv import load_dotenv
-from jose import jwt
 
 # Same lookup as main.py: finds .env here or in a parent folder (e.g. the project root).
 load_dotenv()
 
-from app.core.config import settings  # noqa: E402
+from app.core.security import create_access_token  # noqa: E402
 
 
 user_id = sys.argv[1] if len(sys.argv) > 1 else "dev-user"
 
-claims = {
-    "sub": user_id,
-    "type": "access",
-    "exp": int(time.time()) + 24 * 60 * 60,
-}
-
-print(jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM))
+print(create_access_token(user_id, 24))

@@ -1,3 +1,5 @@
+import time
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
@@ -6,6 +8,14 @@ from app.core.config import settings
 
 
 bearer_scheme = HTTPBearer()
+
+
+def create_access_token(user_id: str, hours: int) -> str:
+    """A signed access token for `user_id`, valid for `hours`."""
+
+    claims = {"sub": user_id, "type": "access", "exp": int(time.time()) + hours * 3600}
+
+    return jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
 def get_current_user_id(

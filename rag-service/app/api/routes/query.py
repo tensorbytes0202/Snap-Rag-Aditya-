@@ -11,7 +11,8 @@ from app.core.exceptions import LLMProviderError
 from app.core.security import get_current_user_id
 from app.services.query_service import process_query
 from app.services.query_graph import stream_query
-from app.services.document_registry import get_active_document
+from app.services.document_registry import get_active_document, get_document_owner
+from app.services.rate_limiter import QuotaExceeded, consume, is_guest, refund
 from app.services.session_store import append_turn, chat_exists, get_turns
 from app.services.snapshot_engine import after_turn
 
@@ -44,6 +45,19 @@ def _recent_history(user_id: str, chat_id: str | None) -> list[dict]:
     return get_turns(user_id, chat_id)[-settings.HISTORY_TURNS:]
 
 
+def _reserve_question(user_id: str, active_document: str | None) -> None:
+    """Demo guests need their own document selected and a question left;
+    one is reserved here and refunded if answering fails."""
+
+    if is_guest(user_id) and (not active_document or get_document_owner(active_document) != user_id):
+        raise HTTPException(status_code=400, detail="Upload a PDF first, then ask about it.")
+
+    try:
+        consume(user_id, "queries")
+    except QuotaExceeded as exc:
+        raise HTTPException(status_code=429, detail=str(exc))
+
+
 @router.post("/query")
 def query_document(
     request: QueryRequest,
@@ -61,6 +75,8 @@ def query_document(
         active_document,
     )
 
+    _reserve_question(user_id, active_document)
+
     try:
         response = process_query(
             request.question,
@@ -69,11 +85,15 @@ def query_document(
             (user_id, request.chat_id) if request.chat_id else None,
         )
     except LLMProviderError:
+        refund(user_id, "queries")
         logger.exception("Language model request failed")
         raise HTTPException(
             status_code=502,
             detail="Language model request failed",
         )
+    except BaseException:
+        refund(user_id, "queries")
+        raise
 
     if request.chat_id:
 
@@ -100,10 +120,10 @@ def _sse(event: dict) -> str:
     return "data: " + json.dumps(event) + "\n\n"
 
 
-def _sse_events(question: str, active_document: str | None, history: list, session=None, record=None):
+def _sse_events(question: str, active_document: str | None, history: list, session=None, record=None, on_failure=None):
     """`record(answer, citations)` is called once a complete answer has
-    streamed, to store the turn; it is skipped when the stream ends in an
-    error."""
+    streamed, to store the turn. If no complete answer streamed,
+    `on_failure()` is called instead (to refund a guest's question)."""
 
     tokens, citations, failed = [], [], False
 
@@ -127,8 +147,11 @@ def _sse_events(question: str, active_document: str | None, history: list, sessi
         logger.exception("Streaming query failed")
         yield _sse({"type": "error", "message": "Something went wrong while answering. Check the backend log."})
 
-    if record and tokens and not failed:
-        record("".join(tokens), citations)
+    if tokens and not failed:
+        if record:
+            record("".join(tokens), citations)
+    elif on_failure:
+        on_failure()
 
     yield _sse({"type": "done"})
 
@@ -143,6 +166,8 @@ def query_stream(
     history = _recent_history(user_id, request.chat_id)
 
     active_document = get_active_document(user_id)
+
+    _reserve_question(user_id, active_document)
 
     def record(answer: str, citations: list):
         append_turn(
@@ -161,6 +186,7 @@ def query_stream(
             history,
             (user_id, request.chat_id) if request.chat_id else None,
             record if request.chat_id else None,
+            lambda: refund(user_id, "queries"),
         ),
         media_type="text/event-stream",
         headers={

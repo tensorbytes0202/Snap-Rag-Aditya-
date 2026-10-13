@@ -23,6 +23,24 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
 
     # ==========================================
+    # Guest (demo) access
+    # ==========================================
+    #
+    # POST /auth/guest hands out a token for a fresh "guest-..." user so
+    # reviewers can try the app without one. Guests are limited; tokens
+    # minted with dev_token.py are not.
+
+    GUEST_ACCESS_ENABLED: bool = True
+    GUEST_TOKEN_HOURS: int = 24
+    GUEST_QUERY_LIMIT: int = 7
+    GUEST_UPLOAD_LIMIT: int = 2
+    GUEST_MAX_PAGES: int = 40
+
+    # Guest sessions one visitor (IP) may start per day, so reloading the
+    # page doesn't reset the quota.
+    GUEST_SESSIONS_PER_IP: int = 3
+
+    # ==========================================
     # LLM Gateway
     # ==========================================
 
@@ -139,6 +157,10 @@ class Settings(BaseSettings):
     @property
     def MEMORY_DIR(self) -> str:
         return os.path.join(self.STORAGE_DIR, "memory")
+
+    @property
+    def USAGE_FILE(self) -> str:
+        return os.path.join(self.STORAGE_DIR, "usage.json")
 
     # ==========================================
     # Chat sessions

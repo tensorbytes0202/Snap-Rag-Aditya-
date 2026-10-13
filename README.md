@@ -256,14 +256,6 @@ cd rag-service
 
 Run only one backend at a time. Two on the same port serve requests unpredictably.
 
-**Access token** (the API has no login; this signs a 24-hour token with your
-`JWT_SECRET_KEY`):
-
-```powershell
-cd rag-service
-..\venv\Scripts\python.exe dev_token.py
-```
-
 **Frontend** (port 8501):
 
 ```powershell
@@ -271,24 +263,55 @@ cd frontend
 ..\venv\Scripts\streamlit.exe run app.py
 ```
 
-Open http://localhost:8501, paste the token under *Connection*, upload a PDF, and ask
-questions. Each conversation is a chat: follow-ups use recent history, and older turns are
-compressed into snapshots and recalled as verified memory.
+Open http://localhost:8501 and either:
+
+- **Start free demo**: one click creates a limited guest session (no token needed), or
+- **I have an access token**: paste an unlimited token for yourself:
+
+  ```powershell
+  cd rag-service
+  ..\venv\Scripts\python.exe dev_token.py
+  ```
+
+  Setting `SNAPRAG_TOKEN` in the environment signs the app in automatically.
+
+Upload a PDF and ask questions. Each conversation is a chat: follow-ups use recent
+history, and older turns are compressed into snapshots and recalled as verified memory.
+The frontend finds the backend through `SNAPRAG_API_URL` (default
+`http://localhost:8003`); on Streamlit Cloud, set it in the app's secrets.
+
+### Demo limits
+
+Guest sessions are limited by the backend (not just the UI), so a public demo can't run
+up LLM costs:
+
+| Limit | Default | Setting |
+|---|---|---|
+| Questions per guest | 7 | `GUEST_QUERY_LIMIT` |
+| PDF uploads per guest | 2 | `GUEST_UPLOAD_LIMIT` |
+| Pages per guest PDF | 40 | `GUEST_MAX_PAGES` |
+| New guest sessions per visitor (IP) per day | 3 | `GUEST_SESSIONS_PER_IP` |
+| Guest token lifetime | 24 h | `GUEST_TOKEN_HOURS` |
+
+A question or upload that fails is not counted. Every user, guest or not, sees only the
+PDFs they uploaded. Set `GUEST_ACCESS_ENABLED=false` to turn guest access off.
 
 ---
 
 ## API
 
-All endpoints except `GET /` need `Authorization: Bearer <token>`.
+All endpoints except `GET /` and `POST /auth/guest` need `Authorization: Bearer <token>`.
 
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/` | health check |
+| POST | `/auth/guest` | start a limited demo session, returns a guest token |
+| GET | `/auth/usage` | the caller's remaining demo allowance |
 | POST | `/upload` | upload and index a PDF (max 50 MB) |
-| GET | `/documents` | list documents and the caller's active one |
+| GET | `/documents` | list the caller's documents and their active one |
 | POST | `/documents/active/{name}` | set the active document |
 | GET | `/documents/active` | get the active document |
-| GET | `/pdf/{filename}` | view a stored PDF |
+| GET | `/pdf/{filename}` | view a PDF the caller uploaded |
 | POST | `/query` | answer a question (JSON) |
 | POST | `/query/stream` | answer with server-sent events: `step`, `citations`, `token`, `error`, `done` |
 | POST | `/chats` | start a chat, returns `chat_id` |

@@ -4,8 +4,10 @@ from pathlib import Path as _Path
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.concurrency import run_in_threadpool
 
+from app.core.config import settings
 from app.core.security import get_current_user_id
-from app.services.pdf_service import sanitize_filename, PDFFileLockedError
+from app.services.pdf_service import count_pages, sanitize_filename, PDFFileLockedError
+from app.services.rate_limiter import QuotaExceeded, consume, is_guest, refund
 from app.services.document_service import (
     ingest_document,
     DocumentOwnershipError,
@@ -96,8 +98,40 @@ async def upload_pdf(
     # rule before touching the file on disk.
     # ------------------------------------------------------
 
+    # ------------------------------------------------------
+    # Demo guests: a page cap (vision indexing costs LLM calls)
+    # checked before any quota is used, then the upload quota.
+    # ------------------------------------------------------
+    if is_guest(user_id):
+
+        try:
+            pages = count_pages(content)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid PDF file.")
+
+        if pages > settings.GUEST_MAX_PAGES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Demo uploads are limited to {settings.GUEST_MAX_PAGES} pages; this PDF has {pages}.",
+            )
+
     try:
-        result = await run_in_threadpool(
+        consume(user_id, "uploads")
+    except QuotaExceeded as exc:
+        raise HTTPException(status_code=429, detail=str(exc))
+
+    try:
+        return await _ingest(content, safe_name, user_id)
+    except BaseException:
+        # A failed upload doesn't count against the quota.
+        refund(user_id, "uploads")
+        raise
+
+
+async def _ingest(content: bytes, safe_name: str, user_id: str):
+
+    try:
+        return await run_in_threadpool(
             ingest_document,
             content=content,
             filename=safe_name,
@@ -137,8 +171,6 @@ async def upload_pdf(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid PDF file.")
 
-    return result
-
 
 # ==========================================================
 # List Documents
@@ -149,12 +181,12 @@ def list_documents(
     user_id: str = Depends(get_current_user_id),
 ):
     """
-    Return all documents registered in the RAG system, plus the
-    caller's own active document.
+    Return the documents the caller uploaded, plus the caller's active
+    document.
     """
 
     return {
-        "documents": get_documents(),
+        "documents": get_documents(owner=user_id),
         "active_document": get_active_document(user_id),
     }
 
@@ -176,7 +208,7 @@ def select_document(
 
     if not any(
         doc["name"] == document_name
-        for doc in get_documents()
+        for doc in get_documents(owner=user_id)
     ):
         raise HTTPException(status_code=404, detail="Document not found.")
 

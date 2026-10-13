@@ -7,7 +7,12 @@ import requests
 
 
 class ApiError(Exception):
-    """A readable error from the backend or the network."""
+    """A readable error from the backend or the network. `status` is the
+    HTTP status code, or None when the backend could not be reached."""
+
+    def __init__(self, message: str, status: int | None = None):
+        super().__init__(message)
+        self.status = status
 
 
 def ping(base_url: str) -> bool:
@@ -17,18 +22,28 @@ def ping(base_url: str) -> bool:
         return False
 
 
-def _describe(resp: requests.Response) -> str:
+def start_guest(base_url: str, viewer_ip: str | None = None) -> dict:
+    """A limited demo token for a new guest. The viewer's IP is forwarded so
+    the backend's per-visitor cap counts people, not this Streamlit server."""
+
+    headers = {"X-Forwarded-For": viewer_ip} if viewer_ip else {}
+
     try:
-        detail = resp.json().get("detail", resp.reason)
+        resp = requests.post(base_url.strip().rstrip("/") + "/auth/guest", headers=headers, timeout=10)
+    except requests.RequestException as exc:
+        raise ApiError(f"Cannot reach the backend ({exc.__class__.__name__})") from exc
+
+    if not resp.ok:
+        raise ApiError(_detail(resp), resp.status_code)
+
+    return resp.json()
+
+
+def _detail(resp: requests.Response) -> str:
+    try:
+        return resp.json().get("detail", resp.reason)
     except (ValueError, AttributeError):
-        detail = resp.reason or "request failed"
-
-    message = f"{resp.status_code}: {detail}"
-
-    if resp.status_code in (401, 403):
-        message += " (check the access token; `python dev_token.py` makes one)"
-
-    return message
+        return resp.reason or "Request failed"
 
 
 def parse_events(chunks: Iterable[bytes]) -> Iterator[dict]:
@@ -62,12 +77,15 @@ class SnapRagClient:
                 method, self.base + path, headers=self.headers, timeout=timeout, **kwargs
             )
         except requests.RequestException as exc:
-            raise ApiError(f"Cannot reach {self.base} ({exc.__class__.__name__})") from exc
+            raise ApiError(f"Cannot reach the backend ({exc.__class__.__name__})") from exc
 
         if not resp.ok:
-            raise ApiError(_describe(resp))
+            raise ApiError(_detail(resp), resp.status_code)
 
         return resp
+
+    def usage(self) -> dict:
+        return self._request("GET", "/auth/usage", timeout=10).json()
 
     def documents(self) -> dict:
         return self._request("GET", "/documents", timeout=10).json()
@@ -100,10 +118,10 @@ class SnapRagClient:
                 connected = True
 
                 if not resp.ok:
-                    raise ApiError(_describe(resp))
+                    raise ApiError(_detail(resp), resp.status_code)
 
                 yield from parse_events(resp.iter_content(chunk_size=None))
 
         except requests.RequestException as exc:
-            problem = "Connection lost" if connected else f"Cannot reach {self.base}"
+            problem = "Connection lost" if connected else "Cannot reach the backend"
             raise ApiError(f"{problem} ({exc.__class__.__name__})") from exc

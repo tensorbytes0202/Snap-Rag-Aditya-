@@ -107,7 +107,9 @@ def register_document(
     logger.info("Document registered: %s", document_name)
 
 
-def get_documents():
+def get_documents(owner: str | None = None):
+    """All documents, or with `owner` only the ones that user uploaded, so
+    one user (e.g. a demo guest) never sees another user's PDFs."""
 
     with _lock:
         registry = _load_registry()
@@ -115,6 +117,9 @@ def get_documents():
     documents = []
 
     for name, info in registry.items():
+
+        if owner is not None and info.get("uploaded_by") != owner:
+            continue
 
         documents.append({
             "name": name,
