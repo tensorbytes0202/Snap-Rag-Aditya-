@@ -1,0 +1,555 @@
+{
+  "name": "SnapRAG-LongConv v1",
+  "document": "cu31924019203078.pdf",
+  "note": "Chapin, Handbook of the Law of Torts (1917), 717 pages. A long conversation about the book is mixed with things the USER says about their own coursework (not in the book). Probes later ask for them. Gold page ranges are PDF pages (PDF page = printed page + 20).",
+  "distance_buckets": {
+    "near": [
+      3,
+      10
+    ],
+    "mid": [
+      12,
+      25
+    ],
+    "far": [
+      30,
+      50
+    ],
+    "very_far": [
+      60,
+      85
+    ]
+  },
+  "doc_template": "{lead} {topic}. State the rule, the reasoning the book gives for it, and the cases it cites, each with its PDF page.",
+  "doc_leads": [
+    "Explain",
+    "Walk me through",
+    "Describe in detail",
+    "What does the book say about"
+  ],
+  "topics": [
+    {
+      "id": "proximate-cause",
+      "topic": "proximate cause and remote cause",
+      "keyword": "proximate cause",
+      "gold_pages": [
+        96,
+        99
+      ]
+    },
+    {
+      "id": "natural-force",
+      "topic": "intervention of natural forces in the chain of causation",
+      "keyword": "natural force",
+      "gold_pages": [
+        99,
+        101
+      ]
+    },
+    {
+      "id": "concurring-cause",
+      "topic": "concurring cause",
+      "keyword": "concurring cause",
+      "gold_pages": [
+        117,
+        120
+      ]
+    },
+    {
+      "id": "res-ipsa",
+      "topic": "res ipsa loquitur",
+      "keyword": "res ipsa",
+      "gold_pages": [
+        552,
+        559
+      ]
+    },
+    {
+      "id": "contributory-negligence",
+      "topic": "contributory negligence",
+      "keyword": "contributory negligence",
+      "gold_pages": [
+        561,
+        576
+      ]
+    },
+    {
+      "id": "last-clear-chance",
+      "topic": "the last clear chance doctrine",
+      "keyword": "last clear chance",
+      "gold_pages": [
+        561,
+        576
+      ]
+    },
+    {
+      "id": "fright",
+      "topic": "liability for fright and mental anguish",
+      "keyword": "fright",
+      "gold_pages": [
+        101,
+        106
+      ]
+    },
+    {
+      "id": "court-jury",
+      "topic": "the functions of court and jury in negligence cases",
+      "keyword": "court and jury",
+      "gold_pages": [
+        123,
+        124
+      ]
+    },
+    {
+      "id": "negligence-per-se",
+      "topic": "negligence per se",
+      "keyword": "negligence per se"
+    },
+    {
+      "id": "attractive-nuisance",
+      "topic": "the attractive nuisance doctrine",
+      "keyword": "attractive nuisance"
+    },
+    {
+      "id": "trespassers",
+      "topic": "the duty owed to trespassers",
+      "keyword": "trespassers"
+    },
+    {
+      "id": "licensees",
+      "topic": "the duty owed to licensees",
+      "keyword": "licensees"
+    },
+    {
+      "id": "invitees",
+      "topic": "the duty owed to invitees",
+      "keyword": "invitees"
+    },
+    {
+      "id": "standard-of-care",
+      "topic": "the standard of care and the reasonable man",
+      "keyword": "standard of care"
+    },
+    {
+      "id": "imputed-negligence",
+      "topic": "imputed negligence",
+      "keyword": "imputed negligence"
+    },
+    {
+      "id": "rescue",
+      "topic": "the rescue doctrine",
+      "keyword": "rescue"
+    },
+    {
+      "id": "assumption-of-risk",
+      "topic": "assumption of risk",
+      "keyword": "assumption of risk"
+    },
+    {
+      "id": "fellow-servant",
+      "topic": "the fellow-servant rule",
+      "keyword": "fellow-servant"
+    },
+    {
+      "id": "master-servant",
+      "topic": "the liability of a master for the torts of a servant",
+      "keyword": "master"
+    },
+    {
+      "id": "independent-contractor",
+      "topic": "the liability for an independent contractor's negligence",
+      "keyword": "independent contractor"
+    },
+    {
+      "id": "carriers",
+      "topic": "the duty of carriers to their passengers",
+      "keyword": "carriers"
+    },
+    {
+      "id": "children",
+      "topic": "the contributory negligence of children",
+      "keyword": "children"
+    },
+    {
+      "id": "assault",
+      "topic": "assault",
+      "keyword": "assault"
+    },
+    {
+      "id": "battery",
+      "topic": "battery",
+      "keyword": "battery"
+    },
+    {
+      "id": "false-imprisonment",
+      "topic": "false imprisonment",
+      "keyword": "false imprisonment"
+    },
+    {
+      "id": "malicious-prosecution",
+      "topic": "malicious prosecution",
+      "keyword": "malicious prosecution"
+    },
+    {
+      "id": "libel",
+      "topic": "libel",
+      "keyword": "libel"
+    },
+    {
+      "id": "slander",
+      "topic": "slander and slander per se",
+      "keyword": "slander"
+    },
+    {
+      "id": "privilege",
+      "topic": "privileged communications in defamation",
+      "keyword": "privilege"
+    },
+    {
+      "id": "deceit",
+      "topic": "deceit and fraudulent misrepresentation",
+      "keyword": "deceit"
+    },
+    {
+      "id": "private-nuisance",
+      "topic": "private nuisance",
+      "keyword": "private nuisance"
+    },
+    {
+      "id": "public-nuisance",
+      "topic": "public nuisance",
+      "keyword": "public nuisance"
+    },
+    {
+      "id": "trespass-land",
+      "topic": "trespass to land",
+      "keyword": "trespass to land"
+    },
+    {
+      "id": "conversion",
+      "topic": "conversion of chattels",
+      "keyword": "conversion"
+    },
+    {
+      "id": "damages",
+      "topic": "compensatory damages",
+      "keyword": "damages"
+    },
+    {
+      "id": "exemplary-damages",
+      "topic": "exemplary or punitive damages",
+      "keyword": "exemplary"
+    },
+    {
+      "id": "joint-tortfeasors",
+      "topic": "joint tort-feasors",
+      "keyword": "joint tort"
+    },
+    {
+      "id": "wrongful-death",
+      "topic": "actions for wrongful death",
+      "keyword": "wrongful death"
+    },
+    {
+      "id": "dangerous-instrumentalities",
+      "topic": "dangerous instrumentalities",
+      "keyword": "dangerous instrumentalit"
+    },
+    {
+      "id": "animals",
+      "topic": "liability for injuries caused by animals",
+      "keyword": "animals"
+    },
+    {
+      "id": "intent",
+      "topic": "intent as to the result of an act",
+      "keyword": "intent"
+    },
+    {
+      "id": "voluntary-act",
+      "topic": "voluntary act or neglect as an element of a tort",
+      "keyword": "voluntary"
+    },
+    {
+      "id": "malice",
+      "topic": "malice and its legal meaning",
+      "keyword": "malice"
+    },
+    {
+      "id": "duty",
+      "topic": "the existence of a legal duty",
+      "keyword": "duty"
+    },
+    {
+      "id": "statutory-duty",
+      "topic": "breach of a statutory duty",
+      "keyword": "statutory"
+    },
+    {
+      "id": "landlord-tenant",
+      "topic": "the liability of landlords for defective premises",
+      "keyword": "landlord"
+    },
+    {
+      "id": "water-fire",
+      "topic": "liability for fire and escaping water",
+      "keyword": "fire"
+    },
+    {
+      "id": "evidence-negligence",
+      "topic": "proof of negligence by circumstantial evidence",
+      "keyword": "circumstantial"
+    },
+    {
+      "id": "burden-proof",
+      "topic": "the burden of proof in negligence actions",
+      "keyword": "burden of proof"
+    },
+    {
+      "id": "warranty",
+      "topic": "the liability of manufacturers to third persons",
+      "keyword": "manufacturer"
+    }
+  ],
+  "plants": [
+    {
+      "id": "deadline",
+      "bucket": "near",
+      "statement": "Note this for later: the draft deadline for my torts coursework is 15 November.",
+      "probe": "What is my draft deadline?",
+      "kind": "recall",
+      "expect_all": [
+        "15\\s+nov|nov\\w*\\s+15"
+      ],
+      "gold": "Your draft deadline is 15 November."
+    },
+    {
+      "id": "scope",
+      "bucket": "mid",
+      "statement": "For my report I will cover only proximate cause and last clear chance, and I will skip nuisance and defamation. Remember that.",
+      "probe": "Which topics did I say I would skip in my report?",
+      "kind": "recall",
+      "expect_all": [
+        "nuisance",
+        "defamation"
+      ],
+      "gold": "You said you would skip nuisance and defamation."
+    },
+    {
+      "id": "example",
+      "bucket": "far",
+      "statement": "Keep in mind that my main worked example in the report will be the railway-crossing hypothetical.",
+      "probe": "Which example did I choose as the main one for my report?",
+      "kind": "recall",
+      "expect_all": [
+        "railway|crossing"
+      ],
+      "gold": "You chose the railway-crossing hypothetical as your main example."
+    },
+    {
+      "id": "word-limit",
+      "bucket": "very_far",
+      "statement": "Please note that my report has a strict limit of 2,500 words.",
+      "probe": "What word limit did I mention for my report?",
+      "kind": "recall",
+      "expect_all": [
+        "2,?500"
+      ],
+      "gold": "Your report has a limit of 2,500 words."
+    },
+    {
+      "id": "advisor",
+      "bucket": "near",
+      "statement": "My advisor is Dr. Meera Rao, and she wants Bluebook-style citations. Note that.",
+      "probe": "Who did I say my advisor is, and what citation style does she want?",
+      "kind": "recall",
+      "expect_all": [
+        "rao",
+        "bluebook"
+      ],
+      "gold": "Your advisor is Dr. Meera Rao and she wants Bluebook-style citations."
+    },
+    {
+      "id": "classmates",
+      "bucket": "mid",
+      "statement": "Remember that I am working on this with two classmates, Kabir and Ananya.",
+      "probe": "Which classmates did I say I am working with?",
+      "kind": "recall",
+      "expect_all": [
+        "kabir",
+        "ananya"
+      ],
+      "gold": "You are working with Kabir and Ananya."
+    },
+    {
+      "id": "tutorial",
+      "bucket": "far",
+      "statement": "Note for later: my torts tutorial is every Tuesday at 4 pm.",
+      "probe": "When did I say my torts tutorial is?",
+      "kind": "recall",
+      "expect_all": [
+        "tuesday",
+        "4\\s*(pm|p\\.m)|16:00"
+      ],
+      "gold": "Your torts tutorial is every Tuesday at 4 pm."
+    },
+    {
+      "id": "room",
+      "bucket": "very_far",
+      "statement": "Please remember that my viva will be in room B-204.",
+      "probe": "Which room did I say my viva will be in?",
+      "kind": "recall",
+      "expect_all": [
+        "b-?204"
+      ],
+      "gold": "Your viva will be in room B-204."
+    },
+    {
+      "id": "reference-tool",
+      "bucket": "near",
+      "statement": "Note this: I keep all my references in Zotero.",
+      "probe": "Which tool did I say I keep my references in?",
+      "kind": "recall",
+      "expect_all": [
+        "zotero"
+      ],
+      "gold": "You keep your references in Zotero."
+    },
+    {
+      "id": "language",
+      "bucket": "mid",
+      "statement": "Keep in mind that the report has to be written in British English.",
+      "probe": "Which variety of English did I say the report has to be in?",
+      "kind": "recall",
+      "expect_all": [
+        "british"
+      ],
+      "gold": "The report has to be in British English."
+    },
+    {
+      "id": "reading",
+      "bucket": "far",
+      "statement": "Remember that I must also read Prosser's chapter on negligence before the viva.",
+      "probe": "What additional reading did I say I must finish before the viva?",
+      "kind": "recall",
+      "expect_all": [
+        "prosser"
+      ],
+      "gold": "You must also read Prosser's chapter on negligence."
+    },
+    {
+      "id": "laptop",
+      "bucket": "very_far",
+      "statement": "Note for later: I name my laptop Tortoise.",
+      "probe": "What did I say I name my laptop?",
+      "kind": "recall",
+      "expect_all": [
+        "tortoise"
+      ],
+      "gold": "You name your laptop Tortoise."
+    }
+  ],
+  "corrections": [
+    {
+      "id": "slot",
+      "bucket": "mid",
+      "gap": [
+        8,
+        16
+      ],
+      "statement": "Note this: my presentation slot is on 3 December.",
+      "correction": "Correction, please note: my presentation slot has moved to 10 December.",
+      "probe": "When is my presentation slot?",
+      "kind": "supersede",
+      "expect_all": [
+        "10\\s+dec|dec\\w*\\s+10"
+      ],
+      "stale": [
+        "(?<![0-9])3\\s+dec|dec\\w*\\s+3(?![0-9])"
+      ],
+      "gold": "Your presentation slot is on 10 December."
+    },
+    {
+      "id": "topic",
+      "bucket": "far",
+      "gap": [
+        8,
+        16
+      ],
+      "statement": "Keep in mind that my report topic is the negligence of carriers.",
+      "correction": "Correction, please remember: I changed my report topic to the rescue doctrine.",
+      "probe": "What is my report topic now?",
+      "kind": "supersede",
+      "expect_all": [
+        "rescue"
+      ],
+      "stale": [
+        "^(?!.*rescue).*carriers"
+      ],
+      "gold": "Your report topic is now the rescue doctrine."
+    }
+  ],
+  "absent": [
+    {
+      "id": "exam-date",
+      "question": "What is my exam date?",
+      "kind": "absent",
+      "gold": "You have not told me your exam date in this conversation."
+    },
+    {
+      "id": "student-id",
+      "question": "What is my student ID number?",
+      "kind": "absent",
+      "gold": "You have not told me your student ID number."
+    },
+    {
+      "id": "university",
+      "question": "Which university did I say I attend?",
+      "kind": "absent",
+      "gold": "You have not told me which university you attend."
+    },
+    {
+      "id": "grade",
+      "question": "What grade did I say I got on my last torts assignment?",
+      "kind": "absent",
+      "gold": "You have not told me what grade you got."
+    }
+  ],
+  "traps": [
+    {
+      "id": "romney-lcc",
+      "question": "What did Romney Marsh v. Trinity House hold about the last clear chance doctrine?",
+      "kind": "trap",
+      "ok_cues": [
+        "wind|tide|sea wall|grounding|natural force|not (discuss|address|cite|state|mention)"
+      ],
+      "forbid": [
+        "romney marsh(?:(?!\\bnot\\b|n't)(?:[^.\\n]|v\\.\\s)){0,120}\\b(?:applies|applied|adopts|adopted|illustrates|illustrated|establishes|established|holds|held)\\b(?:(?!\\bnot\\b|n't)[^.\\n]){0,80}last clear chance"
+      ],
+      "gold": "The book cites Romney Marsh v. Trinity House for wind and tide (section 27), not for the last clear chance doctrine."
+    },
+    {
+      "id": "kellogg-res-ipsa",
+      "question": "What did Milwaukee & St. P. R. Co. v. Kellogg decide about res ipsa loquitur?",
+      "kind": "trap",
+      "ok_cues": [
+        "proximate|remote|chain of|unbroken|not (discuss|address|cite|state|mention)"
+      ],
+      "forbid": [
+        "kellogg(?:(?!\\bnot\\b|n't)(?:[^.\\n]|v\\.\\s|st\\.\\s|p\\.\\s|co\\.\\s|r\\.\\s)){0,120}\\b(?:applies|applied|adopts|adopted|illustrates|illustrated|establishes|established|holds|held)\\b(?:(?!\\bnot\\b|n't)[^.\\n]){0,80}res ipsa"
+      ],
+      "gold": "The book cites Milwaukee & St. P. R. Co. v. Kellogg for proximate cause, not for res ipsa loquitur."
+    }
+  ],
+  "references": {
+    "count": 4,
+    "bucket_order": [
+      "near",
+      "mid",
+      "far",
+      "very_far"
+    ],
+    "question": "Which topic did I ask you to explain at turn {turn}? Answer with the topic only."
+  },
+  "refusal_pattern": "not told|haven'?t told|have not told|not (been )?(mentioned|stated|provided|given|specified|shared)|no (record|mention|information)|don'?t have|do not have|insufficient information|cannot (find|determine)|can'?t (find|determine)|not found|isn'?t (mentioned|stated)|unable to find|did not (say|mention)|didn'?t (say|mention)"
+}

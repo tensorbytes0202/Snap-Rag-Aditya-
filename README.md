@@ -55,23 +55,63 @@ SnapRAG keeps old turns in two forms:
 
 ```
 Every question
-  ├─ Document retrieval   query understanding → dense (Qdrant) + BM25 → RRF → cross-encoder rerank
-  │                       → full parent pages of the top hits + a one-line-per-page document overview
-  ├─ Memory recall        (inside a chat) find similar snapshots → reconstruct → verify → keep verified
-  │                       sentences, within a budget of λ(t) × 600 tokens
-  ├─ Answer               generated from documents + verified memory (+ last 3 turns for follow-ups)
-  │                       → answer verification → confidence → follow-up questions
-  └─ Record               turn appended to the chat log (the cold archive)
+  ├─ side by side
+  │    Document retrieval   query plan → dense (Qdrant) + BM25 → RRF → cross-encoder rerank
+  │                         → full parent pages of the top hits + a one-line-per-page overview
+  │    Memory recall        (inside a chat) conversation state + similar snapshots → reconstruct
+  │                         → verify → keep verified sentences, within λ(t) × 600 tokens
+  ├─ Answer                 generated from documents + memory (+ the turns not yet in a snapshot)
+  ├─ Check (AB-RAG)         answer verification → confidence from three signals
+  │    ≥ 0.80 return · below it read the next batch of passages while the intent's budget lasts
+  │    the best attempt is returned with its honest confidence
+  └─ Record                 turn appended to the chat log (the cold archive)
 
 After every turn (background task)
   ├─ Context Quality Monitor
   │     CIS = 0.35·grounding + 0.25·headroom + 0.25·coherence − 0.15·contradiction
   │     take a snapshot if headroom < 0.20 or CIS < 0.55
-  └─ Snapshot engine
-        LLM extracts facts / entities / decisions / open questions from the un-snapshotted turns
-        → page anchors from the turns' citations → state_hash (sha256), chained via prev_hash
-        → written once to disk + indexed in Qdrant; recent snapshots guide the next extraction
+  ├─ Snapshot engine
+  │     LLM extracts facts / user statements / entities / decisions / open questions from the
+  │     un-snapshotted turns; code adds "asked at turn N" and the page anchors
+  │     → state_hash (sha256), chained via prev_hash → written once + indexed in Qdrant
+  └─ Memory updater
+        decisions, user statements and open questions of every new snapshot are checked against
+        the user's own messages, consolidated (a new value replaces the old one, an answered
+        question closes) and saved as a new version of the conversation state + a hand-off document
 ```
+
+### Adaptive budgeted retrieval (AB-RAG)
+
+A fixed top-k wastes work on easy questions and starves hard ones. Following the AB-RAG idea
+(adaptive retrieval effort under a budget, see the paper in `SNAPRAG_PLAN.md`), the first batch
+of passages is answered and scored, and more passages are read only while the score is below
+the threshold and budget remains:
+
+```
+confidence = 0.50·S1 + 0.25·S2 + 0.25·S3
+  S1  model certainty         the checker's confidence (no token probabilities from the gateway: a proxy)
+  S2  answer-evidence match   cosine of the answer to its closest evidence text
+  S3  reranker-score spread   std of the reranker scores of the passages read
+```
+
+An answer the checker does not support is capped below the threshold. What this adds: the first
+batch and the budget follow the **intent** of the question (a definition gets 3 passages and 1 extra
+batch, a summary 8 and 3); the evidence pool includes the **verified conversation memory**, and a
+question about the chat itself never goes back to the documents; the next batch is free (the same
+ranking read deeper) until the ranking is used up, and only then a fresh, wider search runs, aimed
+by what the checker could not find. Weights and threshold are uncalibrated defaults; the benchmark's
+`full_fixed_k` variant (no extra batches) is the fixed-k ablation.
+
+### Conversation state and hand-off
+
+What the user says about their own task ("my deadline is 15 November", "skip sections 32 and 33")
+is in no document and tiny, so it does not compete with document facts for a snapshot slot. It is
+kept as a consolidated **conversation state**: every item was checked against the user's own
+messages when written, the LLM only points at which old items a new one replaces (it never
+rewrites text), and every update appends a version to `state.jsonl`. The state is shown on every
+turn. A chat idle for more than 30 minutes is a resumed session: its first turn also gets the
+**hand-off** document (state, last question, recent topics, key entities), which
+`GET /chats/{id}/handoff` returns too.
 
 ### Verified reconstruction (the core method)
 
@@ -111,10 +151,12 @@ embedded with `BAAI/bge-small-en-v1.5`, and stored in Qdrant and a BM25 index.
 |---|---|
 | **C1. Verified reconstruction** of compressed memory against snapshot, document evidence and an immutable archive | implemented |
 | **C2. Quality-based snapshot trigger (CIS)** and a turn-aware memory weight (λ) | implemented |
-| **C3. Long document-QA conversation benchmark** (100+ turns, page citations) | harness started; dataset planned |
+| **C4. Intent- and memory-aware adaptive budgeted retrieval** (AB-RAG signals, intent budgets, verified memory as evidence) | implemented; unvalidated |
+| **C3. Long document-QA conversation benchmark** (100 turns, page citations) | harness, dataset spec and scoring done; results pending |
 
-Hybrid retrieval, hash chains, immutability and confidence gating are supporting design,
-not claimed contributions (see LCM, ChronoMem, Cognis, CRAG, Self-RAG). The full plan,
+Hybrid retrieval, hash chains and immutability are supporting design, and AB-RAG's confidence-gated
+stopping is the cited prior work that C4 builds on, not a claimed contribution (see also LCM,
+ChronoMem, Cognis, CRAG, Self-RAG). None of the novelty claims has had a full literature check yet. The full plan,
 related work and paper outline are in [`SNAPRAG_PLAN.md`](SNAPRAG_PLAN.md).
 
 ---
@@ -128,10 +170,10 @@ related work and paper outline are in [`SNAPRAG_PLAN.md`](SNAPRAG_PLAN.md).
 | 2 | Context Quality Monitor (CIS) + snapshot engine | done |
 | 2b | Verified reconstruction + ablation benchmark | done |
 | 3 | Memory recall during answering (λ-weighted fusion) | done |
-| 4 | Confidence-gated self-correction (retry instead of discarding) | planned |
-| 5 | Session hand-off + memory updater | planned |
-| 6 | Long-conversation benchmark, baselines, full ablations | planned |
-| 7 | Tests, polish, chat-session UI | planned |
+| 4 | Adaptive budgeted retrieval: confidence signals, intent budgets, deeper batches | done |
+| 5 | Conversation state (memory updater) + session hand-off | done |
+| 6 | Long-conversation benchmark harness: baselines, ladder, ablations, scoring | done; full runs pending |
+| 7 | Tests (170+), health/metrics endpoints, rate limit, chat-resume UI | done |
 
 ---
 
@@ -170,7 +212,9 @@ conversations at higher compression (Phase 6).
 │   │   ├── prompts/             generation, page vision, snapshot, reconstruction
 │   │   ├── repositories/        Qdrant access
 │   │   └── services/            retrieval, generation, sessions, memory (see below)
-│   └── benchmarks/              reconstruction_eval.py + saved results
+│   ├── tests/                   pytest suite (no network, models or services needed)
+│   └── benchmarks/              longconv/ (long-conversation benchmark), reconstruction_eval,
+│                                retrieval_eval, grounding_check + saved results
 ├── frontend/                    Streamlit chat UI (port 8501)
 ├── SNAPRAG_PLAN.md              research plan, related work, paper outline
 └── a.txt                        original design notes
@@ -186,6 +230,10 @@ Memory-related services:
 | `snapshot_store.py` | snapshot files, CIS log, snapshot index |
 | `reconstruction.py` | reconstruct + verification cascade; ablation modes |
 | `memory_retriever.py` | λ weight, snapshot recall, fusion with document context |
+| `memory_state.py` | conversation state (memory updater), hand-off document |
+| `history.py` | the turns shown to the LLM (last turns + those not yet in a snapshot) |
+| `abrag.py` | AB-RAG: the three confidence signals and the extra-batch loop |
+| `answering.py` | generate + check one attempt (shared by batch and streaming) |
 
 ---
 
@@ -313,11 +361,14 @@ All endpoints except `GET /` and `POST /auth/guest` need `Authorization: Bearer 
 | GET | `/documents/active` | get the active document |
 | GET | `/pdf/{filename}` | view a PDF the caller uploaded |
 | POST | `/query` | answer a question (JSON) |
-| POST | `/query/stream` | answer with server-sent events: `step`, `citations`, `token`, `error`, `done` |
+| POST | `/query/stream` | answer with server-sent events: `step`, `citations`, `token`, `verification`, `revised`, `error`, `done` (a `revised` event replaces the streamed answer) |
 | POST | `/chats` | start a chat, returns `chat_id` |
 | GET | `/chats` | list the caller's chats |
 | GET | `/chats/{id}/messages` | the chat's recorded turns |
-| GET | `/chats/{id}/memory` | the chat's CIS log and snapshots |
+| GET | `/chats/{id}/memory` | the chat's CIS log, snapshots and conversation state |
+| GET | `/chats/{id}/handoff` | where the conversation stands (resume document) |
+| GET | `/healthz` | dependency status (503 when Qdrant, storage or the LLM config is down) |
+| GET | `/metrics` | Prometheus text: queries, LLM calls, corrections, latency |
 
 Query body: `{"question": "...", "chat_id": "<optional>"}`. Without `chat_id` nothing is
 stored and no memory is used. With it, the `/query` response includes `retrieved_memory`
@@ -340,7 +391,15 @@ All are environment variables (see `rag-service/app/core/config.py`):
 | `LAMBDA_FIXED` | unset | constant λ instead of the curve (ablation) |
 | `MEMORY_CONTEXT_TOKENS` | 600 | memory budget at λ = 1 |
 | `SMS_TOP_K` / `SMS_MIN_SIMILARITY` | 3 / 0.5 | snapshots recalled per question |
-| `MEMORY_RECALL_MODE` | `archive` | `off` (no-memory baseline) or `snapshot`, `evidence`, `verify`, `archive` |
+| `MEMORY_RECALL_MODE` | `archive` | `off` (no-memory baseline), `state` (conversation state only) or `snapshot`, `evidence`, `verify`, `archive` |
+| `MEMORY_STATE_ENABLED` | true | show the conversation state on every turn |
+| `STATE_MAX_TOKENS` / `HANDOFF_MAX_TOKENS` / `SESSION_GAP_SECONDS` | 300 / 600 / 1800 | state block size, hand-off size, idle time that makes a session "resumed" |
+| `HISTORY_TURNS` / `HISTORY_MAX_TOKENS` / `HISTORY_ANSWER_CHARS` | 3 / 1500 / 800 | last turns always shown; turns after the newest snapshot are added up to the token budget; answers are shortened |
+| `STOP_CONFIDENCE` / `MAX_EXTRA_BATCHES` | 0.80 / 3 | AB-RAG threshold; cap on extra batches (0 = fixed-k RAG). The per-intent budget is in `query_router.py` |
+| `CONF_W_MODEL` / `CONF_W_SIMILARITY` / `CONF_W_SPREAD` | 0.50 / 0.25 / 0.25 | weights of the three confidence signals |
+| `CQM_FIXED_INTERVAL` / `CQM_CHECK_CONTRADICTION` | 0 / true | ablation: snapshot every N turns; the per-turn contradiction call |
+| `QUERIES_PER_MINUTE` | 20 | per-user request rate (0 = unlimited) |
+| `MEMORY_ROOT` | unset | keep chats and memory elsewhere than `STORAGE_DIR` (benchmarks use a temp folder) |
 | `RECONSTRUCTION_MODEL` | `LLM_MODEL` | model that rebuilds and verifies memory |
 | `PDF_VISION_ENABLED` | true | vision model for image-heavy pages |
 
@@ -372,6 +431,56 @@ evaluate an existing chat that already has a snapshot:
 
 Results are saved as JSON in `rag-service/benchmarks/results/`. Expect rate-limit pauses on
 free LLM tiers; the script waits and retries.
+
+### Long-conversation benchmark (SnapRAG-LongConv)
+
+A scripted 100-turn conversation about the torts book: document questions fill the context, the
+user plants 14 facts about their own coursework (a deadline, a scope, a correction, ...), and 24
+probes later ask for them at four distances (near, mid, far, very far), plus questions whose right
+answer is "you have not told me" and traps built on a similar case. Scoring is by regular
+expression, so it is the same on every run. Variants (`--list`): the baselines `no_memory`,
+`full_history` and `summary_buffer`; the reconstruction ladder `snapshot` → `evidence` → `verify`
+→ `archive`; `state_only` and `full`; and ablations of `full` (fixed λ, no exemplars, fixed
+snapshot interval, fixed-k retrieval). Output: accuracy with bootstrap intervals by kind and
+distance, memory loss (near minus very far), prompt tokens, LLM calls and seconds per turn,
+document page-hit rate, and paired differences against `no_memory`.
+
+```powershell
+cd rag-service
+..\venv\Scripts\python.exe -m benchmarks.longconv.run --dry-run                # checks the harness, no services
+..\venv\Scripts\python.exe -m benchmarks.longconv.run --variants full,no_memory --turns 80
+..\venv\Scripts\python.exe -m benchmarks.longconv.run --variants main --turns 100 --repeats 3 --pause 2
+```
+
+Use at least 80 turns. A run costs roughly `turns × 5` LLM calls per variant plus memory upkeep;
+it saves after every variant and `--resume <file>` continues an interrupted run. LCM, Mem0, A-MEM
+and LLMLingua are not included: they are separate systems and are not re-implemented here.
+
+### Tests
+
+```powershell
+..\venv\Scripts\pip.exe install -r rag-service\requirements-dev.txt
+cd rag-service
+..\venv\Scripts\python.exe -m pytest
+```
+
+The suite needs no network, model or service: the LLM, embeddings and Qdrant are scripted stand-ins.
+
+### Document-QA retrieval check
+
+A long multi-part question is split by one planner call into short topic queries; each runs
+dense + BM25 + RRF + rerank on its own, and the rankings are merged round-robin so every topic
+reaches the LLM. `retrieval_eval.py` checks, for five hard questions on a 717-page torts book,
+that the context holds a page from every section the question needs. It makes one call per
+question, or none with `--no-llm`:
+
+```powershell
+..env\Scripts\python.exe benchmarks/retrieval_eval.py --no-llm
+..env\Scripts\python.exe benchmarks/grounding_check.py res-ipsa-loquitur
+```
+
+`grounding_check.py` answers a question end to end and checks that every case name and
+`(PDF p. N)` citation in the answer occurs in the context the LLM was given.
 
 ---
 

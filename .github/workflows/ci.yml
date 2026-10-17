@@ -28,10 +28,16 @@ jobs:
         run: python -m pip install --upgrade pip
 
       - name: Install backend dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-dev.txt
 
       - name: Compile Python files
-        run: python -m compileall app main.py
+        run: python -m compileall app main.py benchmarks
+
+      - name: Run tests
+        run: python -m pytest
+
+      - name: Check the long-conversation benchmark end to end (stand-in system)
+        run: python -m benchmarks.longconv.run --dry-run --variants no_memory,full --turns 100 --out /tmp/dry.json
 
 
   frontend:

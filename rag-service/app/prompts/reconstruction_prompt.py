@@ -43,11 +43,14 @@ def render_snapshot_for_prompt(snapshot: dict) -> str:
     # in place of the source label.
     lines = [f"- {fact['text']} (turn {fact['turn']})" for fact in facets["facts"]]
 
+    lines += [f"User said (turn {u['turn']}): {u['text']}" for u in facets.get("user_facts", [])]
+
     if facets["entities"]:
         lines.append("Entities: " + ", ".join(entity["name"] for entity in facets["entities"]))
 
     lines += [f"Decision ({d['status']}, turn {d['turn']}): {d['topic']}" for d in facets["decisions"]]
     lines += [f"Open question: {q}" for q in facets["open_questions"]]
+    lines += [f"The user asked at turn {a['turn']}: {a['text']}" for a in facets.get("asked", [])]
 
     return "\n".join(lines) or "(empty)"
 

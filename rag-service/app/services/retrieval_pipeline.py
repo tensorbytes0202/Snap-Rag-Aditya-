@@ -1,12 +1,10 @@
 """Query understanding and dense retrieval.
 
-run_retrieval_pipeline turns a question into search queries (rewrites,
-sub-questions, HyDE passages), metadata filters and a retrieval config;
-retrieve_chunks runs those queries against Qdrant; build_sources and
-build_citations shape the results for the API response.
+run_retrieval_pipeline turns a question into short search queries (see
+query_planner), metadata filters and a retrieval config; retrieve_chunks runs
+queries against Qdrant; build_sources and build_citations shape the results
+for the API response.
 """
-
-import os
 
 from langsmith import traceable
 
@@ -14,17 +12,13 @@ from app.repositories.vector_repository import search_similar_chunks
 from app.services.embedding_service import generate_query_embedding
 from app.services.hyde_service import generate_hyde
 from app.services.metadata_parser import extract_metadata
-from app.services.query_classifier import classify_query
-from app.services.query_decomposition import decompose_query
-from app.services.query_rewriter import rewrite_query
+from app.services.query_planner import plan_query
 from app.services.query_router import get_retrieval_config
-from app.services.self_query_service import generate_self_query
 
 
-def _unique(queries) -> list[str]:
-    """Non-empty strings, first occurrence kept."""
-
-    return list(dict.fromkeys(q for q in queries if isinstance(q, str) and q.strip()))
+# A question this short with one topic is worth a HyDE passage; a long one
+# already has one query per topic, and HyDE would add a call for each.
+HYDE_MAX_WORDS = 40
 
 
 def _as_float(value) -> float:
@@ -40,65 +34,36 @@ def _as_float(value) -> float:
 # ==========================================================
 
 @traceable(name="run_retrieval_pipeline", run_type="chain")
-def run_retrieval_pipeline(question: str):
+def run_retrieval_pipeline(question: str, force_hyde: bool = False):
+    """One search query per topic, a page filter if the question names one
+    ("on page 12"), and the retrieval config for its query type. The caller's
+    active document (see query_runner) decides the document filter.
+    `force_hyde` adds a HyDE passage whatever the question's size or type
+    (corrective retrieval)."""
 
-    # ------------------------------------------------------
-    # Search queries: sub-questions, rewrites, the original
-    # ------------------------------------------------------
+    plan = plan_query(question)
 
-    rewritten_question = rewrite_query(question)
-
-    subqueries = decompose_query(question)
-
-    if not isinstance(subqueries, list):
-        subqueries = [subqueries]
-
-    queries = list(subqueries)
-
-    if isinstance(rewritten_question, list):
-        queries.extend(rewritten_question)
-    else:
-        queries.append(rewritten_question)
-
-    queries.append(question)
-
-    # ------------------------------------------------------
-    # Metadata filters: regex first, then the self-query LLM
-    # for a document or page the regex missed. The caller's
-    # active document (see query_runner) overrides document_name.
-    # ------------------------------------------------------
+    subqueries = plan["subqueries"]
 
     metadata = extract_metadata(question) or {}
-    metadata.setdefault("document_name", None)
+    metadata["document_name"] = None
     metadata.setdefault("page", None)
 
-    self_query = generate_self_query(question) or {}
+    config = get_retrieval_config(plan["query_type"])
 
-    for key in ("document_name", "page"):
-        if self_query.get(key):
-            metadata[key] = self_query[key]
+    hyde = None
 
-    if metadata["document_name"]:
-        metadata["document_name"] = os.path.basename(str(metadata["document_name"])).strip()
-
-    # ------------------------------------------------------
-    # Query type -> retrieval config, HyDE passages
-    # ------------------------------------------------------
-
-    query_type = classify_query(question)
-
-    config = get_retrieval_config(query_type)
-
-    if config.get("use_hyde", False):
-        queries.append(generate_hyde(question))
-        queries.extend(generate_hyde(q) for q in subqueries if isinstance(q, str))
+    if force_hyde:
+        hyde = generate_hyde(" ".join(question.split()[:HYDE_MAX_WORDS]))
+    elif config.get("use_hyde") and len(subqueries) == 1 and len(question.split()) <= HYDE_MAX_WORDS:
+        hyde = generate_hyde(question)
 
     return {
-        "rewritten_question": rewritten_question,
+        "query_type": plan["query_type"],
+        "subqueries": subqueries,
+        "hyde": hyde,
         "metadata": metadata,
-        "query_type": query_type,
         "config": config,
-        "queries": _unique(queries),
     }
 
 
@@ -192,7 +157,7 @@ def build_sources(results):
     return sources
 
 
-def build_citations(sources, top_k=5):
+def build_citations(sources, top_k=10):
     """Up to `top_k` distinct (document, page) pairs, numbered from 1."""
 
     citations = []

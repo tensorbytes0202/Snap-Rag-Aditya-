@@ -107,3 +107,22 @@ def append_cqm(user_id: str, chat_id: str, record: dict) -> None:
     os.makedirs(folder, exist_ok=True)
 
     append_jsonl(os.path.join(folder, "cqm.jsonl"), record)
+
+
+# ==========================================================
+# Conversation state versions
+# ==========================================================
+
+def read_state_versions(user_id: str, chat_id: str) -> list[dict]:
+    """Every saved version of the conversation state, oldest first."""
+
+    return read_jsonl(os.path.join(_chat_dir(user_id, chat_id), "state.jsonl"))
+
+
+def append_state_version(user_id: str, chat_id: str, record: dict) -> None:
+    """Versions are appended, never rewritten: the state has a history."""
+
+    folder = _chat_dir(user_id, chat_id)
+    os.makedirs(folder, exist_ok=True)
+
+    append_jsonl(os.path.join(folder, "state.jsonl"), record)

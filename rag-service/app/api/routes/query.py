@@ -6,20 +6,20 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from app.core.config import settings
 from app.core.exceptions import LLMProviderError
 from app.core.security import get_current_user_id
+from app.services.history import prompt_history
 from app.services.query_service import process_query
 from app.services.query_graph import stream_query
 from app.services.document_registry import get_active_document, get_document_owner
-from app.services.rate_limiter import QuotaExceeded, consume, is_guest, refund
-from app.services.session_store import append_turn, chat_exists, get_turns
+from app.services.rate_limiter import QuotaExceeded, allow_request, consume, is_guest, refund
+from app.services.session_store import append_turn, chat_exists
 from app.services.snapshot_engine import after_turn
 
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["query"])
 
 
 class QueryRequest(BaseModel):
@@ -34,7 +34,7 @@ class QueryRequest(BaseModel):
 
 
 def _recent_history(user_id: str, chat_id: str | None) -> list[dict]:
-    """The caller's last HISTORY_TURNS turns ([] without a chat)."""
+    """The caller's turns for the prompt ([] without a chat)."""
 
     if chat_id is None:
         return []
@@ -42,12 +42,15 @@ def _recent_history(user_id: str, chat_id: str | None) -> list[dict]:
     if not chat_exists(user_id, chat_id):
         raise HTTPException(status_code=404, detail="Chat not found.")
 
-    return get_turns(user_id, chat_id)[-settings.HISTORY_TURNS:]
+    return prompt_history(user_id, chat_id)
 
 
 def _reserve_question(user_id: str, active_document: str | None) -> None:
     """Demo guests need their own document selected and a question left;
     one is reserved here and refunded if answering fails."""
+
+    if not allow_request(user_id):
+        raise HTTPException(status_code=429, detail="Too many questions in a short time. Please wait a moment.")
 
     if is_guest(user_id) and (not active_document or get_document_owner(active_document) != user_id):
         raise HTTPException(status_code=400, detail="Upload a PDF first, then ask about it.")
@@ -121,11 +124,17 @@ def _sse(event: dict) -> str:
 
 
 def _sse_events(question: str, active_document: str | None, history: list, session=None, record=None, on_failure=None):
-    """`record(answer, citations)` is called once a complete answer has
-    streamed, to store the turn. If no complete answer streamed,
-    `on_failure()` is called instead (to refund a guest's question)."""
+    """`record(answer, citations, verified, confidence)` is called once a
+    complete answer has streamed, to store the turn; `verified` and
+    `confidence` are None if the check never ran. If no complete answer
+    streamed, `on_failure()` is called instead (to refund a guest's question).
+
+    A `revised` event replaces the answer streamed so far, so the record
+    holds the revised one."""
 
     tokens, citations, failed = [], [], False
+    verified = confidence = None
+    revised = None
 
     try:
         for event in stream_query(question, active_document, history, session):
@@ -133,6 +142,12 @@ def _sse_events(question: str, active_document: str | None, history: list, sessi
                 tokens.append(event["token"])
             elif event["type"] == "citations":
                 citations = event["citations"]
+            elif event["type"] == "verification":
+                verified, confidence = event.get("supported"), event.get("confidence")
+            elif event["type"] == "revised":
+                revised = event["answer"]
+                citations = event.get("citations") or citations
+                verified, confidence = event.get("supported"), event.get("confidence")
             elif event["type"] == "error":
                 failed = True
             yield _sse(event)
@@ -149,7 +164,7 @@ def _sse_events(question: str, active_document: str | None, history: list, sessi
 
     if tokens and not failed:
         if record:
-            record("".join(tokens), citations)
+            record(revised if revised is not None else "".join(tokens), citations, verified, confidence)
     elif on_failure:
         on_failure()
 
@@ -169,10 +184,11 @@ def query_stream(
 
     _reserve_question(user_id, active_document)
 
-    def record(answer: str, citations: list):
+    def record(answer: str, citations: list, verified: bool | None, confidence: float | None):
         append_turn(
             user_id, request.chat_id, request.question, answer,
             document=active_document, citations=citations,
+            verified=verified, confidence=confidence,
         )
 
     if request.chat_id:

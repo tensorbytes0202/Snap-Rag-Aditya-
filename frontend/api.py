@@ -100,6 +100,18 @@ class SnapRagClient:
     def create_chat(self) -> str:
         return self._request("POST", "/chats", timeout=10).json()["chat_id"]
 
+    def chats(self) -> list[dict]:
+        return self._request("GET", "/chats", timeout=10).json()["chats"]
+
+    def messages(self, chat_id: str) -> list[dict]:
+        return self._request("GET", f"/chats/{chat_id}/messages", timeout=10).json()["turns"]
+
+    def handoff(self, chat_id: str) -> dict:
+        return self._request("GET", f"/chats/{chat_id}/handoff", timeout=10).json()
+
+    def memory(self, chat_id: str) -> dict:
+        return self._request("GET", f"/chats/{chat_id}/memory", timeout=10).json()
+
     def query(self, question: str, chat_id: str | None = None) -> dict:
         body = {"question": question, "chat_id": chat_id}
         return self._request("POST", "/query", timeout=(5, 180), json=body).json()

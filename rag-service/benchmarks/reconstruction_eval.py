@@ -253,7 +253,7 @@ def main():
 
     if args.demo:
         # Never touch real chats or the real snapshot index.
-        settings.STORAGE_DIR = tempfile.mkdtemp(prefix="snaprag_bench_")
+        settings.MEMORY_ROOT = tempfile.mkdtemp(prefix="snaprag_bench_")
         settings.SNAPSHOT_COLLECTION = "snapshot_memory_benchmark"
         print("Building demo chat...", flush=True)
         user, chat_id = build_demo_chat()

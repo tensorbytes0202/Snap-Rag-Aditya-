@@ -81,7 +81,7 @@ def _contradiction(window: list[dict]) -> tuple[float, list | None]:
     """(1.0 or 0.0, the conflicts found). A failed check counts as no
     conflict and returns None, so it never triggers a snapshot by itself."""
 
-    if len(window) < 2:
+    if len(window) < 2 or not settings.CQM_CHECK_CONTRADICTION:
         return 0.0, []
 
     *earlier, latest = window
@@ -138,6 +138,10 @@ def decide(signals: dict, window_turns: int) -> str | None:
 
     if window_turns < MIN_WINDOW_TURNS:
         return None
+
+    # Ablation baseline: a fixed schedule instead of the quality signals.
+    if settings.CQM_FIXED_INTERVAL > 0:
+        return "interval" if window_turns >= settings.CQM_FIXED_INTERVAL else None
 
     if signals["headroom"] < settings.CQM_TRIGGER_HEADROOM:
         return "pressure"

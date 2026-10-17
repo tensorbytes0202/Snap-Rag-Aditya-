@@ -7,7 +7,7 @@ from app.core.security import create_access_token, get_current_user_id
 from app.services.rate_limiter import GUEST_PREFIX, start_guest_session, usage
 
 
-router = APIRouter()
+router = APIRouter(tags=["auth"])
 
 
 def _client_ip(request: Request) -> str:

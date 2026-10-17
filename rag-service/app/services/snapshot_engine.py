@@ -24,6 +24,7 @@ from app.core.config import settings
 from app.prompts.snapshot_prompt import build_snapshot_prompt
 from app.services.context_monitor import CHARS_PER_TOKEN, decide, measure, turn_tokens
 from app.services.llm_provider import chat
+from app.services.memory_state import update_state
 from app.services.session_store import get_turns
 from app.services.snapshot_store import (
     append_cqm,
@@ -36,6 +37,12 @@ from app.utils.json_utils import extract_json
 
 
 _log = logging.getLogger(__name__)
+
+# Facets the LLM writes; the others are derived by code. Only these are shown
+# to the extractor as examples.
+LLM_FACETS = ("facts", "user_facts", "entities", "decisions", "open_questions")
+
+ASKED_CHARS = 160
 
 
 # ==========================================================
@@ -105,6 +112,22 @@ def _clean_facets(data: dict, window: list[dict]) -> dict:
             "verified": by_turn[turn].get("verified"),
         })
 
+    user_facts, seen_user = [], set()
+
+    for item in _as_list(data.get("user_facts")):
+
+        if not isinstance(item, dict) or not isinstance(item.get("text"), str):
+            continue
+
+        turn = _as_turn(item.get("turn"), valid)
+        text = item["text"].strip()
+
+        if turn is None or not text or text.lower() in seen_user:
+            continue
+
+        seen_user.add(text.lower())
+        user_facts.append({"text": text, "turn": turn})
+
     entities = []
 
     for item in _as_list(data.get("entities")):
@@ -150,11 +173,20 @@ def _clean_facets(data: dict, window: list[dict]) -> dict:
         if isinstance(q, str) and q.strip()
     ]
 
+    # Written by code from the turns, not by the LLM: what was asked at which
+    # turn, so "which case did I ask about at turn 5?" has a source.
+    asked = [
+        {"turn": turn["turn"], "text": " ".join(turn["question"].split())[:ASKED_CHARS]}
+        for turn in window
+    ]
+
     return {
         "facts": facts,
+        "user_facts": user_facts,
         "entities": entities,
         "decisions": decisions,
         "open_questions": open_questions,
+        "asked": asked,
     }
 
 
@@ -164,9 +196,11 @@ def render_snapshot(snapshot: dict) -> str:
     facets = snapshot["facets"]
 
     lines = [fact["text"] for fact in facets["facts"]]
+    lines += [f"User said: {fact['text']}" for fact in facets.get("user_facts", [])]
     lines += [f"Entity: {entity['name']}" for entity in facets["entities"]]
     lines += [f"Decision ({d['status']}): {d['topic']}" for d in facets["decisions"]]
     lines += [f"Open question: {q}" for q in facets["open_questions"]]
+    lines += [f"Asked at turn {a['turn']}: {a['text']}" for a in facets.get("asked", [])]
 
     return "\n".join(lines)
 
@@ -182,7 +216,10 @@ def create_snapshot(user_id: str, chat_id: str, window: list[dict], previous: li
 
     exemplars = previous[-settings.SNAPSHOT_EXEMPLARS:] if settings.SNAPSHOT_EXEMPLARS > 0 else []
 
-    prompt = build_snapshot_prompt(window, [snapshot["facets"] for snapshot in exemplars])
+    prompt = build_snapshot_prompt(
+        window,
+        [{name: snapshot["facets"].get(name, []) for name in LLM_FACETS} for snapshot in exemplars],
+    )
 
     data = extract_json(chat([{"role": "user", "content": prompt}])["message"]["content"])
 
@@ -302,3 +339,12 @@ def _after_turn(user_id: str, chat_id: str) -> None:
             record["snapshot_error"] = str(exc)[:200]
 
     append_cqm(user_id, chat_id, record)
+
+    # The conversation state and hand-off follow the snapshots. It catches up
+    # on every snapshot it has not seen, so a failure here is retried by the
+    # next call and never loses a statement.
+    if settings.MEMORY_STATE_ENABLED:
+        try:
+            update_state(user_id, chat_id)
+        except Exception:
+            _log.warning("State update failed for chat %s", chat_id, exc_info=True)

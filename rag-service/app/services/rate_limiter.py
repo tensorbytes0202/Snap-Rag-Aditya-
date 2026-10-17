@@ -14,6 +14,8 @@ so a restart doesn't reset them.
 import json
 import os
 import threading
+import time
+from collections import deque
 from datetime import date
 
 from app.core.config import settings
@@ -132,5 +134,45 @@ def start_guest_session(ip: str) -> bool:
         sessions[key] = sessions.get(key, 0) + 1
         data["ip_sessions"] = sessions
         _save(data)
+
+    return True
+
+
+# ==========================================================
+# Request rate (per user, per minute)
+# ==========================================================
+#
+# Separate from the guest quotas above: this limits how fast any user can
+# start questions (each one costs several LLM calls), not how many a guest
+# has in total. Kept in memory; a restart simply starts the windows over.
+
+_recent: dict[str, deque] = {}
+_recent_lock = threading.Lock()
+
+WINDOW_SECONDS = 60
+
+
+def allow_request(user_id: str, now: float | None = None) -> bool:
+    """Count a request for `user_id`; False when QUERIES_PER_MINUTE requests
+    were already made in the last minute (0 turns the limit off)."""
+
+    limit = settings.QUERIES_PER_MINUTE
+
+    if limit <= 0:
+        return True
+
+    now = time.monotonic() if now is None else now
+
+    with _recent_lock:
+
+        window = _recent.setdefault(user_id, deque())
+
+        while window and now - window[0] >= WINDOW_SECONDS:
+            window.popleft()
+
+        if len(window) >= limit:
+            return False
+
+        window.append(now)
 
     return True

@@ -9,8 +9,14 @@
     3. pack the verified sentences into lambda(t) * MEMORY_CONTEXT_TOKENS,
        skipping duplicates and sentences the document context already has
 
-The fused context is the document context plus this memory block. Memory
-recall never breaks answering: any failure just means no memory this turn.
+The conversation state (what the user stated or decided, see memory_state)
+does not compete for those slots: it is small, always relevant and checked
+when written, so it is added to every turn as its own block.
+
+recall_memory needs only the question, so it can run beside document
+retrieval; finalize_memory then packs its sentences against the document
+context. The fused context is the document context plus memory_block().
+Memory recall never breaks answering: any failure just means less memory.
 """
 
 import logging
@@ -23,6 +29,7 @@ from app.api.dependencies.qdrant import qdrant_client
 from app.core.config import settings
 from app.services.context_monitor import CHARS_PER_TOKEN
 from app.services.embedding_service import generate_query_embedding
+from app.services.memory_state import handoff_block, state_block, current_state
 from app.services.reconstruction import recall
 from app.services.session_store import get_turns, user_key
 from app.services.snapshot_store import list_snapshots
@@ -64,23 +71,28 @@ def find_snapshots(user_id: str, chat_id: str, question: str) -> list[tuple[dict
     ]
 
 
-def merge_snapshots(snapshots: list[dict], active_document: str | None) -> dict:
+def merge_snapshots(snapshots: list[dict], active_document: str | None, with_conversation: bool = True) -> dict:
     """One snapshot-shaped view of several snapshots, for a single recall()
     call. With an active document, facts and entities tied to another
-    document are left out; decisions and open questions belong to the
-    conversation and are kept."""
+    document are left out; what the user said and decided belongs to the
+    conversation and is kept, unless `with_conversation` is False (the
+    conversation state block carries it instead)."""
 
     def same_document(documents) -> bool:
         return active_document is None or not documents or active_document in documents
 
-    facets = {"facts": [], "entities": [], "decisions": [], "open_questions": []}
+    facets = {"facts": [], "user_facts": [], "entities": [], "decisions": [], "open_questions": [], "asked": []}
 
     for snapshot in sorted(snapshots, key=lambda s: s["from_turn"]):
         f = snapshot["facets"]
         facets["facts"] += [x for x in f["facts"] if same_document([x["document"]] if x.get("document") else [])]
         facets["entities"] += [x for x in f["entities"] if same_document(x.get("documents"))]
-        facets["decisions"] += f["decisions"]
-        facets["open_questions"] += f["open_questions"]
+        facets["asked"] += f.get("asked", [])
+
+        if with_conversation:
+            facets["user_facts"] += f.get("user_facts", [])
+            facets["decisions"] += f["decisions"]
+            facets["open_questions"] += f["open_questions"]
 
     return {
         "state_hash": "+".join(s["state_hash"][:12] for s in snapshots),
@@ -95,22 +107,39 @@ def _normalize(text: str) -> str:
     return re.sub(r"\s+", " ", text.lower()).strip(" .")
 
 
-def recall_memory(user_id: str, chat_id: str, question: str, active_document: str | None, document_context: str) -> dict | None:
-    """Verified memory for this turn, or None when memory is switched off."""
+def recall_memory(user_id: str, chat_id: str, question: str, active_document: str | None) -> dict | None:
+    """Verified memory candidates for this turn, or None when memory is
+    switched off. Call finalize_memory next."""
 
     if settings.MEMORY_RECALL_MODE == "off":
         return None
 
     turn = len(get_turns(user_id, chat_id)) + 1
-    weight = memory_weight(turn)
 
     memory = {
         "turn": turn,
-        "lambda": round(weight, 3),
+        "lambda": round(memory_weight(turn), 3),
         "snapshots": [],
         "sentences": [],
         "tokens": 0,
+        "state_items": 0,
+        "state_text": "",
+        "handoff": False,
+        "candidates": [],
     }
+
+    if settings.MEMORY_STATE_ENABLED:
+        try:
+            memory["state_text"] = state_block(user_id, chat_id)
+            memory["state_items"] = len(current_state(user_id, chat_id)) if memory["state_text"] else 0
+            memory["handoff_text"] = handoff_block(user_id, chat_id)
+            memory["handoff"] = bool(memory["handoff_text"])
+        except Exception as exc:
+            _log.warning("Conversation state unavailable for chat %s: %s", chat_id, exc)
+
+    # "state": the conversation state only, no snapshot reconstruction.
+    if settings.MEMORY_RECALL_MODE == "state":
+        return memory
 
     try:
 
@@ -121,7 +150,7 @@ def recall_memory(user_id: str, chat_id: str, question: str, active_document: st
 
         memory["snapshots"] = [{"seq": s["seq"], "similarity": score} for s, score in found]
 
-        merged = merge_snapshots([s for s, _ in found], active_document)
+        merged = merge_snapshots([s for s, _ in found], active_document, not settings.MEMORY_STATE_ENABLED)
 
         if not any(merged["facets"].values()):
             return memory
@@ -133,11 +162,27 @@ def recall_memory(user_id: str, chat_id: str, question: str, active_document: st
         memory["error"] = str(exc)[:200]
         return memory
 
-    budget = weight * settings.MEMORY_CONTEXT_TOKENS
+    memory["candidates"] = result["kept"]
+    memory["dropped_unverified"] = len(result["dropped"])
+    memory["verification_failed"] = result["verification_failed"]
+
+    return memory
+
+
+def finalize_memory(memory: dict | None, document_context: str) -> dict | None:
+    """Pack the verified candidates into lambda(t) * MEMORY_CONTEXT_TOKENS,
+    leaving out duplicates and what the document context already says."""
+
+    if memory is None:
+        return None
+
+    budget = memory["lambda"] * settings.MEMORY_CONTEXT_TOKENS
     in_documents = _normalize(document_context)
     seen = set()
 
-    for item in result["kept"]:
+    memory["sentences"], memory["tokens"] = [], 0
+
+    for item in memory.pop("candidates", []):
 
         key = _normalize(item["text"])
         tokens = max(1, len(item["text"]) // CHARS_PER_TOKEN)
@@ -152,18 +197,19 @@ def recall_memory(user_id: str, chat_id: str, question: str, active_document: st
         memory["sentences"].append(item)
         memory["tokens"] += tokens
 
-    memory["dropped_unverified"] = len(result["dropped"])
-    memory["verification_failed"] = result["verification_failed"]
-
     return memory
 
 
 def memory_block(memory: dict | None) -> str:
     """The memory part of the fused context ("" when there is none)."""
 
-    if not memory or not memory["sentences"]:
+    if not memory:
         return ""
 
-    lines = "\n".join(f"- {item['text']}" for item in memory["sentences"])
+    block = memory.get("handoff_text", "") + memory.get("state_text", "")
 
-    return f"\n\nVERIFIED MEMORY OF EARLIER TURNS (checked against the documents and the conversation):\n{lines}"
+    if memory["sentences"]:
+        lines = "\n".join(f"- {item['text']}" for item in memory["sentences"])
+        block += f"\n\nVERIFIED MEMORY OF EARLIER TURNS (checked against the documents and the conversation):\n{lines}"
+
+    return block

@@ -5,6 +5,7 @@ from openai import OpenAI
 
 from app.core.config import settings
 from app.core.exceptions import LLMProviderError
+from app.core.metrics import record_llm_call
 
 _log = logging.getLogger(__name__)
 
@@ -84,6 +85,8 @@ def chat(
 
     if settings.LLM_REASONING_EFFORT:
         reasoning_kwargs["reasoning_effort"] = settings.LLM_REASONING_EFFORT
+
+    record_llm_call("stream" if stream else "chat")
 
     try:
 

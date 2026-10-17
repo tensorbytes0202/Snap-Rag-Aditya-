@@ -12,7 +12,7 @@ from app.services.pdf_service import validate_stored_filename
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["documents"])
 
 
 @router.get("/pdf/{filename}")

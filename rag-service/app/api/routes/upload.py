@@ -25,7 +25,7 @@ from app.services.document_registry import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["documents"])
 
 # Upload constraints
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024   # 50 MB

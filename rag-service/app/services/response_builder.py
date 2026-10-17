@@ -15,6 +15,8 @@ def build_success_response(
     sources,
     citations,
     memory=None,
+    attempts=None,
+    signals=None,
 ):
 
     return {
@@ -31,6 +33,10 @@ def build_success_response(
         "citations": citations,
         # Verified snapshot memory used for this answer (None outside a chat).
         "retrieved_memory": memory,
+        # Every attempt (strategy, confidence, passages and pages read), and the
+        # confidence signals of the returned answer.
+        "attempts": attempts or [],
+        "signals": signals or {},
     }
 
 

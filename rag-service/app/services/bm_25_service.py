@@ -1,3 +1,5 @@
+import re
+
 from langsmith import traceable
 from rank_bm25 import BM25Okapi
 
@@ -9,17 +11,40 @@ from app.services.bm25_index import (
 )
 
 
-def _build_bm25(chunks):
+# Bump when `tokenize` changes: an index built with an older tokenizer is
+# rebuilt from its stored chunks (no re-embedding, no API call) on first use.
+TOKENIZER_VERSION = 2
 
-    tokenized = [
+_STOPWORDS = frozenset("""
+a an and are as at be but by can could did do does for from had has have how if in
+into is it its of on or such that the their then there these this those to was were
+what when where which who whom why will with would not no nor so than too very
+about above after again against all any because been before being below between both
+down during each few further he her here him his i me more most my myself new now
+only other our out over own same she should some them they through under until up
+us we you your
+""".split())
 
-        chunk["text"].split()
 
-        for chunk in chunks
+def tokenize(text):
+    """Lowercase words and numbers without punctuation or stopwords, so
+    "Negligence." in a page matches "negligence" in a query and filler words
+    ("the", "using", "only") add no score."""
 
+    return [
+        token
+        for token in re.findall(r"[a-z0-9]+", text.lower())
+        if token not in _STOPWORDS
     ]
 
-    return BM25Okapi(tokenized)
+
+def _build_bm25(chunks):
+
+    bm25 = BM25Okapi([tokenize(chunk["text"]) for chunk in chunks])
+
+    bm25.tokenizer_version = TOKENIZER_VERSION
+
+    return bm25
 
 
 def stage_bm25_index(document_name, chunks) -> str:
@@ -64,13 +89,24 @@ def bm25_search(
     bm25 = data["bm25"]
     chunks = data["chunks"]
 
-    scores = bm25.get_scores(
-        query.split()
-    )
+    if getattr(bm25, "tokenizer_version", 1) != TOKENIZER_VERSION:
 
+        bm25 = _build_bm25(chunks)
+
+        commit_index(stage_index(document_name, bm25, chunks), document_name)
+
+    tokens = tokenize(query)
+
+    if not tokens:
+        return []
+
+    scores = bm25.get_scores(tokens)
+
+    # Zero-score chunks share no word with the query; keeping them would
+    # pad the result with arbitrary chunks.
     ranked = sorted(
 
-        zip(chunks, scores),
+        ((chunk, score) for chunk, score in zip(chunks, scores) if score > 0),
 
         key=lambda x: x[1],
 

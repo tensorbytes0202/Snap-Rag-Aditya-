@@ -70,6 +70,28 @@ def new_chat():
     st.session_state.chat_id = None
 
 
+def resume_chat(chat_id: str):
+    """Reload a past chat: its turns become the visible conversation and
+    later questions continue it (its memory is recalled server-side)."""
+
+    try:
+        turns = client().messages(chat_id)
+    except ApiError as exc:
+        st.session_state.notice = handle(exc)
+        return
+
+    messages = []
+    for turn in turns:
+        messages.append({"role": "user", "content": turn["question"]})
+        messages.append({
+            "role": "assistant", "content": turn["answer"], "confidence": turn.get("confidence"),
+            "verified": turn.get("verified"), "citations": turn.get("citations") or [],
+        })
+
+    st.session_state.messages = messages
+    st.session_state.chat_id = chat_id
+
+
 def handle(exc: ApiError) -> str:
     """React to an API error and return the message to show."""
 
@@ -210,9 +232,10 @@ if st.session_state.docs is None:
 def answer_stream(question: str, chat_id: str | None) -> dict:
     """Stream the answer live; progress steps go into a compact status above it."""
 
-    steps, errors, memory = [], [], {}
+    steps, errors, memory, check, revised, citations = [], [], {}, {}, {}, []
     started = time.perf_counter()
     status = st.status(":shimmer[Searching the document]", type="compact")
+    box = st.empty()
 
     def tokens():
         try:
@@ -224,12 +247,29 @@ def answer_stream(question: str, chat_id: str | None) -> dict:
                     status.write(steps[-1])
                     if event["message"] == "Memory recalled":
                         memory.update(event.get("detail") or {})
+                elif event["type"] == "citations":
+                    citations[:] = event["citations"]
+                elif event["type"] == "verification":
+                    check.update(event)
+                elif event["type"] == "revised":
+                    revised.update(event)
                 elif event["type"] == "error":
                     errors.append(event["message"])
         except ApiError as exc:
             errors.append(handle(exc))
 
-    text = st.write_stream(tokens())
+    with box.container():
+        text = st.write_stream(tokens())
+
+    content = str(text) if text else ""
+
+    # A low-confidence answer is searched for again; the better one replaces it.
+    if revised:
+        content = revised["answer"]
+        citations[:] = revised.get("citations") or citations
+        box.markdown(content)
+        check.update(supported=revised.get("supported"), confidence=revised.get("confidence"))
+
     elapsed = time.perf_counter() - started
     status.update(
         label=f"Finished in {elapsed:.1f}s" if not errors else "Stopped with an error",
@@ -238,9 +278,15 @@ def answer_stream(question: str, chat_id: str | None) -> dict:
     for message in errors:
         st.error(message, icon=":material/error:")
 
-    return {"role": "assistant", "content": str(text) if text else "", "steps": steps,
-            "elapsed": elapsed, "memory_count": memory.get("sentences", 0),
-            "error": "; ".join(errors) or None}
+    reply = {"role": "assistant", "content": content, "steps": steps, "elapsed": elapsed,
+             "memory_count": memory.get("sentences", 0) + memory.get("state_items", 0),
+             "confidence": check.get("confidence"), "verified": check.get("supported"),
+             "revised": bool(revised), "citations": citations,
+             "error": "; ".join(errors) or None}
+
+    render_badges(reply)
+
+    return reply
 
 
 def answer_batch(question: str, chat_id: str | None) -> dict:
@@ -267,6 +313,21 @@ def answer_batch(question: str, chat_id: str | None) -> dict:
     }
 
 
+def render_badges(message: dict):
+    with st.container(horizontal=True):
+        if message.get("confidence") is not None:
+            confidence_badge(message["confidence"])
+        if message.get("verified") is not None:
+            st.badge("Verified" if message["verified"] else "Not verified",
+                     icon=":material/verified:" if message["verified"] else ":material/gpp_maybe:",
+                     color="green" if message["verified"] else "red")
+        if message.get("revised"):
+            st.badge("Revised after a second search", icon=":material/refresh:", color="orange")
+        if message.get("memory_count"):
+            st.badge(f"Used {message['memory_count']} verified memory facts", icon=":material/neurology:",
+                     color="violet")
+
+
 def render_assistant(index: int, message: dict):
     if message.get("steps"):
         with st.expander(f"Searched in {message['elapsed']:.1f}s", type="compact"):
@@ -278,16 +339,7 @@ def render_assistant(index: int, message: dict):
     if message.get("error"):
         st.error(message["error"], icon=":material/error:")
 
-    with st.container(horizontal=True):
-        if message.get("confidence") is not None:
-            confidence_badge(message["confidence"])
-        if message.get("verified") is not None:
-            st.badge("Verified" if message["verified"] else "Not verified",
-                     icon=":material/verified:" if message["verified"] else ":material/gpp_maybe:",
-                     color="green" if message["verified"] else "red")
-        if message.get("memory_count"):
-            st.badge(f"Used {message['memory_count']} verified memory facts", icon=":material/neurology:",
-                     color="violet")
+    render_badges(message)
 
     if message.get("memory"):
         with st.expander("Verified memory used", icon=":material/neurology:"):
@@ -365,6 +417,24 @@ with st.sidebar:
         st.button("New chat", icon=":material/add_comment:", on_click=new_chat,
                   disabled=not st.session_state.messages)
         st.button("Sign out", icon=":material/logout:", on_click=sign_out)
+
+    if st.session_state.chat_id:
+        with st.expander("Where we left off", icon=":material/bookmark:"):
+            try:
+                st.text(client().handoff(st.session_state.chat_id)["handoff"] or "Nothing yet.")
+            except ApiError as exc:
+                st.caption(str(exc))
+
+    with st.expander("Past chats", icon=":material/history:"):
+        try:
+            past = [c for c in client().chats() if c["turns"] and c["chat_id"] != st.session_state.chat_id][:8]
+        except ApiError:
+            past = []
+        if not past:
+            st.caption("No earlier chats.")
+        for chat in past:
+            st.button(f"{chat['title'][:40]} ({chat['turns']})", key=f"resume_{chat['chat_id']}",
+                      icon=":material/replay:", type="tertiary", on_click=resume_chat, args=(chat["chat_id"],))
 
     st.caption(f"[Source code on GitHub]({GITHUB_URL})")
 

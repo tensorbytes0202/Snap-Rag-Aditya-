@@ -25,6 +25,7 @@ from app.api.routes.upload import router as upload_router
 from app.api.routes.pdf_preview import router as pdf_preview_router
 from app.api.routes.chats import router as chats_router
 from app.api.routes.auth import router as auth_router
+from app.api.routes.system import router as system_router
 
 
 app = FastAPI(
@@ -75,6 +76,10 @@ app.include_router(
 
 app.include_router(
     auth_router
+)
+
+app.include_router(
+    system_router
 )
 
 
