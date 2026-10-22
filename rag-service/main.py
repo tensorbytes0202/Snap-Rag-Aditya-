@@ -22,10 +22,8 @@ import app.core.logger  # noqa: F401
 from app.core.lifespan import lifespan
 from app.api.routes.query import router as query_router
 from app.api.routes.upload import router as upload_router
-from app.api.routes.pdf_preview import router as pdf_preview_router
 from app.api.routes.chats import router as chats_router
 from app.api.routes.auth import router as auth_router
-from app.api.routes.system import router as system_router
 
 
 app = FastAPI(
@@ -67,19 +65,11 @@ app.include_router(
 )
 
 app.include_router(
-    pdf_preview_router
-)
-
-app.include_router(
     chats_router
 )
 
 app.include_router(
     auth_router
-)
-
-app.include_router(
-    system_router
 )
 
 

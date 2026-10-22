@@ -3,23 +3,17 @@ import threading
 import pytest
 
 from app.core import metrics
-from app.core.config import settings
-from app.services import rate_limiter, session_store
+from app.services import session_store
 from app.utils.parallel import run_parallel
 
 
 # ---------- metrics ----------
 
-def test_counters_and_prometheus_text():
+def test_counters():
     metrics.inc("snaprag_queries_total", outcome="answered")
     metrics.inc("snaprag_queries_total", outcome="answered")
-    metrics.observe("snaprag_query_seconds", 1.5)
 
-    text = metrics.render_prometheus()
-
-    assert 'snaprag_queries_total{outcome="answered"} 2' in text
-    assert "snaprag_query_seconds_sum 1.500000" in text
-    assert "snaprag_query_seconds_count 1" in text
+    assert metrics.value("snaprag_queries_total", outcome="answered") == 2
 
 
 def test_llm_calls_are_counted_inside_the_scope_including_worker_threads():
@@ -96,21 +90,3 @@ def test_partial_line_after_a_crash_is_skipped_and_the_next_turn_survives(chat_f
     session_store.append_turn(user, chat, "q3", "a3")
 
     assert [t["question"] for t in session_store.get_turns(user, chat)] == ["q1", "q3"]
-
-
-# ---------- request rate ----------
-
-def test_request_rate_limit(monkeypatch):
-    monkeypatch.setattr(settings, "QUERIES_PER_MINUTE", 3)
-    rate_limiter._recent.clear()
-
-    assert [rate_limiter.allow_request("u", now=t) for t in (0, 1, 2)] == [True] * 3
-    assert rate_limiter.allow_request("u", now=3) is False
-    assert rate_limiter.allow_request("other", now=3) is True      # per user
-    assert rate_limiter.allow_request("u", now=61) is True         # the window moved on
-
-
-def test_request_rate_limit_can_be_turned_off(monkeypatch):
-    monkeypatch.setattr(settings, "QUERIES_PER_MINUTE", 0)
-
-    assert all(rate_limiter.allow_request("u", now=0) for _ in range(100))

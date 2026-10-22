@@ -11,7 +11,6 @@ import logging
 from dataclasses import dataclass, field, replace
 
 from app.services.bm_25_service import bm25_search
-from app.services.document_registry import get_document_overview
 from app.services.hyde_service import generate_hyde
 from app.services.query_planner import MAX_SUBQUERIES
 from app.services.reranker_services import rerank_chunks
@@ -60,7 +59,6 @@ class Retrieval:
     bm25_chunks: list = field(default_factory=list)
     hybrid_chunks: list = field(default_factory=list)
     ranked_chunks: list = field(default_factory=list)
-    overview: list = field(default_factory=list)
     limit: int = 5
     # The query plan, so a retry can reuse it instead of planning again.
     plan: dict = field(default_factory=dict)
@@ -95,14 +93,6 @@ class Retrieval:
             + (chunk.get("parent_text") or chunk["text"])
             for chunk in self.top_chunks
         ))
-
-        # One gist line per page of the active document, so a question
-        # whose answer is a page's *meaning* ("what proves it works?")
-        # can be answered even when that page didn't rank in the top K.
-        if self.overview:
-            passages.append(
-                "Document overview (one line per page):\n" + "\n".join(self.overview)
-            )
 
         return "\n\n".join(passages)
 
@@ -190,9 +180,6 @@ def run_retrieval(
         metadata["document_name"] = active_document
 
     found = Retrieval(subqueries, pipeline["query_type"], config, plan=pipeline)
-
-    if active_document:
-        found.overview = get_document_overview(active_document)
 
     step("Understood the question", rewritten=found.rewritten_question, kind=found.query_type)
 

@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from app.api.routes import query as query_routes
 from app.core.config import settings
 from app.core.security import get_current_user_id
-from app.services import query_graph, rate_limiter, session_store, snapshot_store
+from app.services import query_graph, session_store, snapshot_store
 from app.services.abrag import Attempt
 
 import main
@@ -19,7 +19,6 @@ import main
 def client(monkeypatch):
 
     main.app.dependency_overrides[get_current_user_id] = lambda: "alice"
-    rate_limiter._recent.clear()
     monkeypatch.setattr(query_routes, "get_active_document", lambda user_id: "d.pdf")
     monkeypatch.setattr(query_routes, "after_turn", lambda user_id, chat_id: None)
 
@@ -30,42 +29,6 @@ def client(monkeypatch):
 
 def events_of(response):
     return [json.loads(block[6:]) for block in response.text.split("\n\n") if block.startswith("data: ")]
-
-
-# ---------- system ----------
-
-def test_metrics_endpoint_lists_counters(client):
-    from app.core import metrics
-
-    metrics.inc("snaprag_queries_total", outcome="answered")
-
-    response = client.get("/metrics")
-
-    assert response.status_code == 200 and 'snaprag_queries_total{outcome="answered"} 1' in response.text
-
-
-def test_healthz_reports_each_dependency_and_503_when_qdrant_is_down(client, monkeypatch):
-    from app.api.routes import system
-
-    monkeypatch.setattr(system, "_qdrant", lambda: {"ok": False, "error": "ConnectError"})
-    monkeypatch.setattr(system, "_redis", lambda: {"ok": False, "required": False})
-
-    response = client.get("/healthz")
-
-    assert response.status_code == 503
-    assert response.json()["checks"]["qdrant"]["ok"] is False
-
-
-def test_a_down_redis_only_degrades(client, monkeypatch):
-    from app.api.routes import system
-
-    monkeypatch.setattr(system, "_qdrant", lambda: {"ok": True})
-    monkeypatch.setattr(system, "_storage", lambda: {"ok": True})
-    monkeypatch.setattr(system, "_redis", lambda: {"ok": False, "required": False})
-
-    response = client.get("/healthz")
-
-    assert response.status_code == 200 and response.json()["status"] == "ok"
 
 
 # ---------- chats ----------
@@ -146,15 +109,6 @@ def test_the_prompt_history_includes_turns_after_the_last_snapshot(client, monke
     client.post("/query", json={"question": "next", "chat_id": chat_id})
 
     assert [t["turn"] for t in seen["h"]] == [1, 2, 3, 4]
-
-
-def test_requests_per_minute_are_limited(client, monkeypatch):
-    monkeypatch.setattr(settings, "QUERIES_PER_MINUTE", 2)
-    monkeypatch.setattr(query_routes, "process_query", lambda *a: answer_response())
-
-    codes = [client.post("/query", json={"question": "q"}).status_code for _ in range(3)]
-
-    assert codes == [200, 200, 429]
 
 
 def test_a_failed_answer_refunds_nothing_for_full_users_and_maps_llm_errors(client, monkeypatch):

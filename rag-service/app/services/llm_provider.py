@@ -1,4 +1,8 @@
 import logging
+import re
+import threading
+import time
+from collections import deque
 
 from langsmith.wrappers import wrap_openai
 from openai import OpenAI
@@ -28,13 +32,48 @@ DEFAULT_MODEL = settings.LLM_MODEL
 # construction failure is reported as an LLMProviderError, same as
 # any other provider failure.
 #
-# max_retries=0: the gateway itself retries transient failures
-# (429/5xx/timeouts) with its own backoff, so a second retry layer
-# here would only multiply worst-case latency. The timeout must
-# comfortably exceed the gateway's own worst case per request.
+# Transient failures (429, 5xx, timeouts) are retried by the SDK with backoff,
+# up to LLM_MAX_RETRIES. The timeout must comfortably exceed one slow request.
 # ==========================================================
 
 _client = None
+
+# Requests started in the last minute, for LLM_REQUESTS_PER_MINUTE (the free
+# Gemini tier allows 15 a minute per model; going over fails the request).
+_started: deque = deque()
+_started_lock = threading.Lock()
+_RETRY_IN = re.compile(r"retry in ([0-9.]+)s")
+
+
+def _wait_for_slot() -> None:
+    """Blocks until a request may start without passing the per-minute limit."""
+
+    limit = settings.LLM_REQUESTS_PER_MINUTE
+
+    while limit > 0:
+
+        with _started_lock:
+
+            now = time.monotonic()
+
+            while _started and now - _started[0] >= 60:
+                _started.popleft()
+
+            if len(_started) < limit:
+                _started.append(now)
+                return
+
+            wait = 60 - (now - _started[0])
+
+        time.sleep(wait + 0.1)
+
+
+def _retry_delay(exc: Exception) -> float | None:
+    """Seconds the provider asks us to wait after a quota error, else None."""
+
+    match = _RETRY_IN.search(str(exc)) if "429" in str(exc) else None
+
+    return min(float(match.group(1)) + 1, 90) if match else None
 
 
 def _get_client():
@@ -53,7 +92,7 @@ def _get_client():
                     api_key=settings.LLM_GATEWAY_TOKEN,
                     base_url=settings.LLM_GATEWAY_URL,
                     timeout=settings.LLM_REQUEST_TIMEOUT_SECONDS,
-                    max_retries=0,
+                    max_retries=settings.LLM_MAX_RETRIES,
                 )
             )
         except Exception as exc:
@@ -88,23 +127,35 @@ def chat(
 
     record_llm_call("stream" if stream else "chat")
 
-    try:
+    for attempt in range(4):
 
-        client = _get_client()
+        _wait_for_slot()
 
-        completion = client.chat.completions.create(
-            model=model_name,
-            messages=messages,
-            temperature=temperature,
-            stream=stream,
-            **reasoning_kwargs,
-        )
+        try:
 
-    except LLMProviderError:
-        raise
+            client = _get_client()
 
-    except Exception as exc:
-        raise LLMProviderError(str(exc)) from exc
+            completion = client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                temperature=temperature,
+                stream=stream,
+                **reasoning_kwargs,
+            )
+
+            break
+
+        except LLMProviderError:
+            raise
+
+        except Exception as exc:
+
+            delay = _retry_delay(exc)
+
+            if delay is None or attempt == 3:
+                raise LLMProviderError(str(exc)) from exc
+
+            time.sleep(delay)
 
     if stream:
         return completion

@@ -12,7 +12,7 @@ from app.services.history import prompt_history
 from app.services.query_service import process_query
 from app.services.query_graph import stream_query
 from app.services.document_registry import get_active_document, get_document_owner
-from app.services.rate_limiter import QuotaExceeded, allow_request, consume, is_guest, refund
+from app.services.rate_limiter import QuotaExceeded, consume, is_guest, refund
 from app.services.session_store import append_turn, chat_exists
 from app.services.snapshot_engine import after_turn
 
@@ -48,9 +48,6 @@ def _recent_history(user_id: str, chat_id: str | None) -> list[dict]:
 def _reserve_question(user_id: str, active_document: str | None) -> None:
     """Demo guests need their own document selected and a question left;
     one is reserved here and refunded if answering fails."""
-
-    if not allow_request(user_id):
-        raise HTTPException(status_code=429, detail="Too many questions in a short time. Please wait a moment.")
 
     if is_guest(user_id) and (not active_document or get_document_owner(active_document) != user_id):
         raise HTTPException(status_code=400, detail="Upload a PDF first, then ask about it.")

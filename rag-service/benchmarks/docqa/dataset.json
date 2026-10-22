@@ -1,0 +1,1503 @@
+{
+ "document": "A Suitable Boy Vikram Seth.pdf",
+ "questions": [
+  {
+   "id": "q01",
+   "type": "multi_hop",
+   "difficulty": "medium",
+   "question": "At whose house does Savita and Pran's wedding take place, and in which locality of Brahmpur does that house stand?",
+   "answer": "It takes place at Prem Nivas, the Kapoor family house, in the locality of Pasand Bagh.",
+   "pages": [
+    11,
+    31
+   ],
+   "facts": [
+    {
+     "a": "Prem\\s+Nivas"
+    },
+    {
+     "a": "Pasand\\s+Bagh"
+    }
+   ]
+  },
+  {
+   "id": "q02",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "Why did Mahesh Kapoor, the groom's father, end up hosting the wedding instead of the bride's family?",
+   "answer": "Mrs Rupa Mehra's father, who was supposed to host, took sudden umbrage a fortnight before the wedding, locked up his house and disappeared, so the Minister stepped in.",
+   "pages": [
+    11
+   ],
+   "facts": [
+    {
+     "a": "umbrage|took\\s+offen[cs]e|offended|huff",
+     "e": "umbrage"
+    },
+    {
+     "a": "stepped\\s+in|took\\s+over|insisted\\s+on\\s+(putting|hosting)|hosted",
+     "e": "stepped\\s+in"
+    }
+   ]
+  },
+  {
+   "id": "q03",
+   "type": "numeric",
+   "difficulty": "easy",
+   "question": "How many times did the bride and groom walk around the sacred fire?",
+   "answer": "Seven times.",
+   "pages": [
+    34
+   ],
+   "facts": [
+    {
+     "a": "seven|\\b7\\b",
+     "e": "seven\\s+times"
+    }
+   ]
+  },
+  {
+   "id": "q04",
+   "type": "inference",
+   "difficulty": "hard",
+   "question": "Mahesh Kapoor wanted a particular kind of performer at the wedding. Who was it, and why did Mrs Rupa Mehra refuse?",
+   "answer": "He wanted a renowned ghazal singer (a courtesan); Mrs Rupa Mehra refused because 'that sort of person' meant a Muslim and a courtesan.",
+   "pages": [
+    32
+   ],
+   "facts": [
+    {
+     "a": "ghazal|singer",
+     "e": "ghazals"
+    },
+    {
+     "a": "Muslim"
+    },
+    {
+     "a": "courtesan"
+    }
+   ]
+  },
+  {
+   "id": "q05",
+   "type": "aggregation",
+   "difficulty": "medium",
+   "question": "What was Dr Kishen Chand Seth's profession, and what was his diet restricted to?",
+   "answer": "He was a radiologist (septuagenarian); his diet was boiled eggs, weak tea, lemon squash and arrowroot biscuits.",
+   "pages": [
+    33,
+    34
+   ],
+   "facts": [
+    {
+     "a": "radiologist"
+    },
+    {
+     "a": "boiled\\s+eggs?"
+    },
+    {
+     "a": "arrowroot"
+    }
+   ]
+  },
+  {
+   "id": "q06",
+   "type": "multi_hop",
+   "difficulty": "medium",
+   "question": "Where does Arun Mehra work, what is his brother Varun studying, and where do the two of them live?",
+   "answer": "Arun is an executive at Bentsen & Pryce in Calcutta; Varun studies mathematics at Calcutta University and lives with Arun and Meenakshi in Calcutta.",
+   "pages": [
+    21,
+    22
+   ],
+   "facts": [
+    {
+     "a": "Bentsen"
+    },
+    {
+     "a": "mathematics|maths",
+     "e": "mathematics"
+    },
+    {
+     "a": "Calcutta"
+    }
+   ]
+  },
+  {
+   "id": "q07",
+   "type": "multi_hop",
+   "difficulty": "medium",
+   "question": "Whom is Arun married to, which family does she come from, and what bothered Mrs Rupa Mehra about the match?",
+   "answer": "He is married to Meenakshi, a Chatterji (daughter of Mr Justice Chatterji of the Calcutta High Court); Mrs Rupa Mehra disliked that he married outside the khatri caste.",
+   "pages": [
+    24,
+    25
+   ],
+   "facts": [
+    {
+     "a": "Meenakshi"
+    },
+    {
+     "a": "Chatterji"
+    },
+    {
+     "a": "khatri|caste",
+     "e": "khatri\\s+caste"
+    }
+   ]
+  },
+  {
+   "id": "q08",
+   "type": "inference",
+   "difficulty": "hard",
+   "question": "What does Arun look down on about the Kapoors and the wedding celebrations?",
+   "answer": "He finds them provincial and crass: the rustic relatives and state politicians, the coloured lights in the hedge, the pomegranate juice instead of alcohol, and Maan running a cloth shop in Banaras.",
+   "pages": [
+    25,
+    26
+   ],
+   "facts": [
+    {
+     "a": "provincial"
+    },
+    {
+     "a": "pomegranate"
+    },
+    {
+     "a": "cloth\\s+shop|shop",
+     "e": "cloth\\s+shop"
+    }
+   ]
+  },
+  {
+   "id": "q09",
+   "type": "numeric",
+   "difficulty": "medium",
+   "question": "How old are Bhaskar and Aparna at the time of the outing to the zoo?",
+   "answer": "Bhaskar is nine and Aparna is a third of his age, i.e. three.",
+   "pages": [
+    57
+   ],
+   "facts": [
+    {
+     "a": "nine|\\b9\\b"
+    },
+    {
+     "a": "three|\\b3\\b|third",
+     "e": "third\\s+of\\s+his\\s+age"
+    }
+   ]
+  },
+  {
+   "id": "q10",
+   "type": "multi_hop",
+   "difficulty": "medium",
+   "question": "What is Malati Trivedi studying and at which college, and under whom does she learn classical singing?",
+   "answer": "She is a medical student at the Prince of Wales Medical College and studies classical singing under Ustad Majeed Khan.",
+   "pages": [
+    51,
+    59
+   ],
+   "facts": [
+    {
+     "a": "medic|doctor",
+     "e": "medical"
+    },
+    {
+     "a": "Prince\\s+of\\s+Wales"
+    },
+    {
+     "a": "Majeed\\s+Khan"
+    }
+   ]
+  },
+  {
+   "id": "q11",
+   "type": "inference",
+   "difficulty": "medium",
+   "question": "Why did old Mrs Tandon flinch when the Nawab Sahib mentioned Pakistan?",
+   "answer": "Her family had fled the riots in Lahore three years earlier, lost most of their wealth, and her son Kedarnath was scarred in an attack on their convoy.",
+   "pages": [
+    45
+   ],
+   "facts": [
+    {
+     "a": "Lahore"
+    },
+    {
+     "a": "flee|fled|riot|massacre|mob|violence|attack",
+     "e": "flee"
+    }
+   ]
+  },
+  {
+   "id": "q12",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "How did Kedarnath get the scars on his hands, and what trade did he take up after returning to Brahmpur?",
+   "answer": "Rioters attacked his convoy of army trucks near the Ravi Bridge during Partition and he caught a spear blade with his hands; in Brahmpur he went into the shoe trade.",
+   "pages": [
+    45,
+    170
+   ],
+   "facts": [
+    {
+     "a": "Ravi|convoy|spear|riot",
+     "e": "Ravi\\s+Bridge"
+    },
+    {
+     "a": "shoe"
+    }
+   ]
+  },
+  {
+   "id": "q13",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "Who saved the convoy Kedarnath was travelling in when it was attacked near the Ravi Bridge?",
+   "answer": "A Gurkha regiment coming from the other side opened fire and the attackers fled.",
+   "pages": [
+    170,
+    171
+   ],
+   "facts": [
+    {
+     "a": "Gurkha"
+    }
+   ]
+  },
+  {
+   "id": "q14",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "What plant is Lata named after, and how did Lata react when her mother told her she must cling to her husband?",
+   "answer": "She is named after a vine; her mother said she must cling to her husband and Lata repeated 'Cling?' with quiet scorn.",
+   "pages": [
+    48,
+    49
+   ],
+   "facts": [
+    {
+     "a": "vine|creeper",
+     "e": "vine"
+    },
+    {
+     "a": "cling"
+    }
+   ]
+  },
+  {
+   "id": "q15",
+   "type": "multi_hop",
+   "difficulty": "medium",
+   "question": "Where did the group go in the tonga the morning after the wedding, and what did Varun say was special about the Brahmpur race-course?",
+   "answer": "They went to the zoo; Varun said it is the only anti-clockwise race-course in India other than Lucknow.",
+   "pages": [
+    50,
+    52
+   ],
+   "facts": [
+    {
+     "a": "zoo"
+    },
+    {
+     "a": "anti.?clockwise|counter.?clockwise",
+     "e": "anti-clockwise"
+    },
+    {
+     "a": "Lucknow"
+    }
+   ]
+  },
+  {
+   "id": "q16",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "How does Dr Kishen Chand Seth insist his nimbu pani be made, and why?",
+   "answer": "With salt (and pepper) rather than sugar, because he is diabetic and sugar is poison for him.",
+   "pages": [
+    76,
+    77
+   ],
+   "facts": [
+    {
+     "a": "salt"
+    },
+    {
+     "a": "diabet|sugar",
+     "e": "diabetes"
+    },
+    {
+     "a": "pepper"
+    }
+   ]
+  },
+  {
+   "id": "q17",
+   "type": "numeric",
+   "difficulty": "easy",
+   "question": "How old is the servant Mansoor and whom is he standing in for?",
+   "answer": "He is sixteen and is standing in for his father, who had taken a short leave.",
+   "pages": [
+    75
+   ],
+   "facts": [
+    {
+     "a": "sixteen|\\b16\\b"
+    },
+    {
+     "a": "father"
+    }
+   ]
+  },
+  {
+   "id": "q18",
+   "type": "inference",
+   "difficulty": "hard",
+   "question": "Why did Mrs Rupa Mehra decide not to put golden numerals showing the age on Parvati's birthday card?",
+   "answer": "Parvati was only 35, ten years younger than Rupa; the '35' would imply an unacceptable age disparity (and an unacceptable motive for marrying her father).",
+   "pages": [
+    85,
+    86
+   ],
+   "facts": [
+    {
+     "a": "35|thirty.five"
+    },
+    {
+     "a": "disparit|younger|age\\s+gap|age\\s+difference",
+     "e": "disparity"
+    }
+   ]
+  },
+  {
+   "id": "q19",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "What match did Dr Seth suggest for Lata, and what did he say about a possible double wedding involving Maan?",
+   "answer": "He suggested a young radiologist at the Prince of Wales; he said they could have captured Maan for a double wedding, but Maan was now said to be engaged to a Banaras girl.",
+   "pages": [
+    83
+   ],
+   "facts": [
+    {
+     "a": "radiologist"
+    },
+    {
+     "a": "double\\s+wedding"
+    },
+    {
+     "a": "Banaras"
+    }
+   ]
+  },
+  {
+   "id": "q20",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "What happened when Mrs Rupa Mehra and her four children went to live with her father after her husband's death?",
+   "answer": "It lasted only a few months and was a disaster; Seth accused her of making eyes at his colleagues, Arun threatened to beat him up, and she left with the children for Darjeeling.",
+   "pages": [
+    69,
+    70
+   ],
+   "facts": [
+    {
+     "a": "few\\s+months"
+    },
+    {
+     "a": "disaster"
+    },
+    {
+     "a": "Darjeeling"
+    }
+   ]
+  },
+  {
+   "id": "q21",
+   "type": "multi_hop",
+   "difficulty": "medium",
+   "question": "Whom did Mrs Rupa Mehra write to for help in finding a match for Lata, and during which holiday did she propose they visit?",
+   "answer": "She wrote to Kalpana (Mr Gaur's daughter) in Delhi and proposed visiting during Divali (or the Christmas-New Year holidays).",
+   "pages": [
+    92,
+    94,
+    95
+   ],
+   "facts": [
+    {
+     "a": "Kalpana"
+    },
+    {
+     "a": "Divali|Diwali",
+     "e": "Divali"
+    }
+   ]
+  },
+  {
+   "id": "q22",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "What was Raghubir Mehra's gift to his wife when their son Arun was born?",
+   "answer": "A black and gold Mont Blanc fountain pen.",
+   "pages": [
+    88
+   ],
+   "facts": [
+    {
+     "a": "Mont\\s*Blanc|fountain\\s+pen",
+     "e": "Mont\\s+Blanc"
+    }
+   ]
+  },
+  {
+   "id": "q23",
+   "type": "detail",
+   "difficulty": "easy",
+   "question": "Who runs the Imperial Book Depot and on which street is it located?",
+   "answer": "The brothers Yashwant and Balwant run it, on Nabiganj.",
+   "pages": [
+    96
+   ],
+   "facts": [
+    {
+     "a": "Yashwant"
+    },
+    {
+     "a": "Balwant"
+    },
+    {
+     "a": "Nabiganj"
+    }
+   ]
+  },
+  {
+   "id": "q24",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "What does the young man who talks to Lata in the bookshop say he studies, and what does his father teach?",
+   "answer": "He is a history student; his father teaches maths at the university.",
+   "pages": [
+    99,
+    100
+   ],
+   "facts": [
+    {
+     "a": "history"
+    },
+    {
+     "a": "math",
+     "e": "maths"
+    }
+   ]
+  },
+  {
+   "id": "q25",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "Haresh takes Bhaskar to meet a certain Dr Durrani. Who is Dr Durrani's son, and why does Haresh want Bhaskar to meet him?",
+   "answer": "Dr Durrani's son is Kabir; Haresh thinks Bhaskar's interest in mathematics is remarkable and wants him to meet the mathematician.",
+   "pages": [
+    163,
+    165
+   ],
+   "facts": [
+    {
+     "a": "Kabir"
+    },
+    {
+     "a": "mathematic|maths",
+     "e": "mathematics"
+    }
+   ]
+  },
+  {
+   "id": "q26",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "What did Bhaskar take away with him from Dr Durrani's house?",
+   "answer": "Loops of twisted newspaper, a purple kite and exactly sixteen toothpicks.",
+   "pages": [
+    167
+   ],
+   "facts": [
+    {
+     "a": "toothpick"
+    },
+    {
+     "a": "kite"
+    },
+    {
+     "a": "newspaper"
+    }
+   ]
+  },
+  {
+   "id": "q27",
+   "type": "numeric",
+   "difficulty": "medium",
+   "question": "How much did Haresh pay Jagat Ram for the brogues compared with what he had promised?",
+   "answer": "One-and-a-half times as much as he had promised.",
+   "pages": [
+    169
+   ],
+   "facts": [
+    {
+     "a": "one.and.a.half|1\\.5|50\\s*(%|per\\s*cent)|half\\s+again|(an\\s+)?extra\\s+half|150",
+     "e": "one-and-a-half\\s+times"
+    }
+   ]
+  },
+  {
+   "id": "q28",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "Which writer did Pran want added to the Modern British Literature syllabus, and who led the opposition to it?",
+   "answer": "James Joyce; Professor O.P. Mishra, the head of the English Department, opposed it.",
+   "pages": [
+    105,
+    106
+   ],
+   "facts": [
+    {
+     "a": "Joyce"
+    },
+    {
+     "a": "Mishra"
+    }
+   ]
+  },
+  {
+   "id": "q29",
+   "type": "inference",
+   "difficulty": "hard",
+   "question": "What arguments does Professor Mishra use against putting Joyce on the syllabus?",
+   "answer": "He says India should not follow the American dissertation mill, that Ulysses and Finnegans Wake are unreadable and unhealthy for students, and that they encourage sloppy writing.",
+   "pages": [
+    109,
+    110
+   ],
+   "facts": [
+    {
+     "a": "America"
+    },
+    {
+     "a": "Ulysses"
+    },
+    {
+     "a": "Finnegans"
+    }
+   ]
+  },
+  {
+   "id": "q30",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "Which committee member unexpectedly supported Pran, and which Joyce story did he cite?",
+   "answer": "Dr Narayanan, a Romantic Revivalist, cited 'The Dead'.",
+   "pages": [
+    110
+   ],
+   "facts": [
+    {
+     "a": "Narayanan"
+    },
+    {
+     "a": "The\\s+Dead"
+    }
+   ]
+  },
+  {
+   "id": "q31",
+   "type": "numeric",
+   "difficulty": "medium",
+   "question": "How many writers are on the Modern British Literature list, and what position has Pran applied for?",
+   "answer": "Twenty-one writers; Pran applied for a readership in the department.",
+   "pages": [
+    107,
+    108
+   ],
+   "facts": [
+    {
+     "a": "twenty.one|\\b21\\b",
+     "e": "twenty-one"
+    },
+    {
+     "a": "readership|reader",
+     "e": "readership"
+    }
+   ]
+  },
+  {
+   "id": "q32",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "How did the unrest at Misri Mandi begin?",
+   "answer": "A fight in a cheap drinking place (the kalari's joint) between a trader's assistant and three jatavs left a man blind in one eye; a crowd of jatavs then gathered at the Govind Shoe Mart and threatened to burn the stall.",
+   "pages": [
+    172,
+    173,
+    174
+   ],
+   "facts": [
+    {
+     "a": "drink|kalari|liquor",
+     "e": "kalari"
+    },
+    {
+     "a": "Govind\\s+Shoe\\s+Mart|Shoe\\s+Mart",
+     "e": "Govind\\s+Shoe\\s+Mart"
+    },
+    {
+     "a": "eye|sight|blind",
+     "e": "sight\\s+of\\s+his\\s+eye"
+    }
+   ]
+  },
+  {
+   "id": "q33",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "What orders did Home Minister L.N. Agarwal give District Magistrate Krishan Dayal about Misri Mandi, and what practical objection did the DM raise?",
+   "answer": "He told him to guard the entrances of the Govind Shoe Mart and disperse pickets, reading Section 144 and firing if necessary; the DM objected that police were tied up at the Shiva Temple site.",
+   "pages": [
+    176,
+    177,
+    178
+   ],
+   "facts": [
+    {
+     "a": "Section\\s+144"
+    },
+    {
+     "a": "fir(e|ing)",
+     "e": "firing"
+    },
+    {
+     "a": "Shiva\\s+Temple"
+    }
+   ]
+  },
+  {
+   "id": "q34",
+   "type": "inference",
+   "difficulty": "hard",
+   "question": "What combination of events led to the riot in Chowk on the Friday evening?",
+   "answer": "The Imam's inflammatory sermon about the Shiva Temple, a conch being blown during the call to prayer, and only about fifteen policemen being left at the Chowk police station because the Home Minister had stationed police in Misri Mandi.",
+   "pages": [
+    179,
+    183
+   ],
+   "facts": [
+    {
+     "a": "sermon|Imam",
+     "e": "sermon"
+    },
+    {
+     "a": "conch"
+    },
+    {
+     "a": "fifteen"
+    }
+   ]
+  },
+  {
+   "id": "q35",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "Whom does the Imam call the guiding spirit of the temple committee?",
+   "answer": "The 'debauched buffalo of Marh', i.e. the Raja of Marh.",
+   "pages": [
+    181
+   ],
+   "facts": [
+    {
+     "a": "Marh"
+    }
+   ]
+  },
+  {
+   "id": "q36",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "How was the police action at Baitar House stopped, and who carried the appeal to the Chief Minister?",
+   "answer": "Zainab wrote a letter that Murtaza Ali and little Hassan carried to the Chief Minister, who phoned Agarwal and ordered him to call it off and make the police leave.",
+   "pages": [
+    240,
+    241,
+    242
+   ],
+   "facts": [
+    {
+     "a": "Murtaza"
+    },
+    {
+     "a": "Zainab"
+    },
+    {
+     "a": "call(ed)?\\s+(it\\s+)?off|leave|withdr",
+     "e": "Call\\s+it\\s+off"
+    }
+   ]
+  },
+  {
+   "id": "q37",
+   "type": "inference",
+   "difficulty": "medium",
+   "question": "On what legal pretext did L.N. Agarwal plan to act against Baitar House?",
+   "answer": "He thought part of Baitar House could be treated as evacuee property because Begum Abida Khan's husband had gone to Pakistan, and he phoned the Custodian of Evacuee Property.",
+   "pages": [
+    233,
+    235
+   ],
+   "facts": [
+    {
+     "a": "evacuee"
+    },
+    {
+     "a": "Custodian"
+    }
+   ]
+  },
+  {
+   "id": "q38",
+   "type": "aggregation",
+   "difficulty": "hard",
+   "question": "How did the Democratic, Socialist and smaller parties vote on the Zamindari Abolition Bill, and what did the Democratic Party do afterwards?",
+   "answer": "The Democratic Party voted against unanimously, the Socialists reluctantly voted for it ('half a loaf'), smaller parties and Independents mostly for it; the Democratic Party then walked out.",
+   "pages": [
+    255,
+    256,
+    257
+   ],
+   "facts": [
+    {
+     "a": "Democratic"
+    },
+    {
+     "a": "Socialist"
+    },
+    {
+     "a": "walk(ed)?.?out|walkout",
+     "e": "walked\\s+out"
+    }
+   ]
+  },
+  {
+   "id": "q39",
+   "type": "inference",
+   "difficulty": "hard",
+   "question": "According to Begum Abida Khan, how did the government restructure the compensation to avoid a court challenge?",
+   "answer": "It split compensation into a non-graduated compensation and a graduated Rehabilitation Grant, moving three-quarters of the money into the grant.",
+   "pages": [
+    244,
+    245
+   ],
+   "facts": [
+    {
+     "a": "Rehabilitation"
+    },
+    {
+     "a": "graduated",
+     "e": "non-graduated"
+    },
+    {
+     "a": "three.quarters|75",
+     "e": "three-quarters"
+    }
+   ]
+  },
+  {
+   "id": "q40",
+   "type": "numeric",
+   "difficulty": "hard",
+   "question": "On what payment terms were zamindars to be compensated, according to Begum Abida Khan?",
+   "answer": "Half in government bonds, and the rest in instalments over twenty-five years.",
+   "pages": [
+    243,
+    253
+   ],
+   "facts": [
+    {
+     "a": "bond"
+    },
+    {
+     "a": "instal?ments?"
+    },
+    {
+     "a": "twenty.five|\\b25\\b",
+     "e": "twenty-five"
+    }
+   ]
+  },
+  {
+   "id": "q41",
+   "type": "numeric",
+   "difficulty": "medium",
+   "question": "How many people did Begum Abida Khan say were being dispossessed by the bill?",
+   "answer": "Eight lakh people.",
+   "pages": [
+    252
+   ],
+   "facts": [
+    {
+     "a": "eight\\s+lakh|8\\s+lakh|800,?000",
+     "e": "eight\\s+lakh"
+    }
+   ]
+  },
+  {
+   "id": "q42",
+   "type": "detail",
+   "difficulty": "hard",
+   "question": "What does the Nawab Sahib remember about the signatories of the Zamindars' Association petition to the Governor twelve years earlier?",
+   "answer": "A good third of the signatories had used thumbprints (were illiterate).",
+   "pages": [
+    249
+   ],
+   "facts": [
+    {
+     "a": "thumb"
+    },
+    {
+     "a": "third"
+    }
+   ]
+  },
+  {
+   "id": "q43",
+   "type": "aggregation",
+   "difficulty": "medium",
+   "question": "What two examples of princely extravagance does the Nawab Sahib recall?",
+   "answer": "A ruler obsessed with dogs, and an opium addict who wanted women thrown into his lap.",
+   "pages": [
+    250,
+    251
+   ],
+   "facts": [
+    {
+     "a": "dogs?"
+    },
+    {
+     "a": "opium"
+    }
+   ]
+  },
+  {
+   "id": "q44",
+   "type": "multi_hop",
+   "difficulty": "medium",
+   "question": "In Ustad Majeed Khan's class, which raag was Malati learning and which composition was Veena Tandon singing?",
+   "answer": "Malati was learning Raag Ramkali; Veena sang the composition 'Jaago Mohan Pyaare' (in Raag Bhairava).",
+   "pages": [
+    260,
+    265
+   ],
+   "facts": [
+    {
+     "a": "Ramkali"
+    },
+    {
+     "a": "Jaago\\s+Mohan"
+    }
+   ]
+  },
+  {
+   "id": "q45",
+   "type": "aggregation",
+   "difficulty": "hard",
+   "question": "Which students and which accompanist were in Ustad Majeed Khan's class that morning?",
+   "answer": "Malati Trivedi, a young man (the boy), two young women, a shy Bengali woman and Veena Tandon, with Motu Chand on tabla.",
+   "pages": [
+    258,
+    259,
+    261,
+    262
+   ],
+   "facts": [
+    {
+     "a": "Malati"
+    },
+    {
+     "a": "Veena"
+    },
+    {
+     "a": "Motu\\s+Chand"
+    },
+    {
+     "a": "Bengali"
+    }
+   ]
+  },
+  {
+   "id": "q46",
+   "type": "inference",
+   "difficulty": "hard",
+   "question": "Why was Ustad Majeed Khan upset about the Shiva Temple, and what did he ask Veena to tell her father?",
+   "answer": "The temple being built in Chowk near his house would let the conch compete with the muezzin's call to prayer; he asked her to tell her father, the Minister, to help protect their religion.",
+   "pages": [
+    265,
+    266,
+    269
+   ],
+   "facts": [
+    {
+     "a": "Shiva\\s+Temple|temple",
+     "e": "Shiva\\s+Temple"
+    },
+    {
+     "a": "conch|azaan|muezzin|call\\s+to\\s+prayer",
+     "e": "conch"
+    },
+    {
+     "a": "father|Minister"
+    }
+   ]
+  },
+  {
+   "id": "q47",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "What does Ustad Majeed Khan's own family background reveal, and why does it embitter him?",
+   "answer": "He comes from a family of hereditary sarangi players; he tries to dissociate from the sarangi tradition's link with courtesans, but no kalawant family would marry into his.",
+   "pages": [
+    275
+   ],
+   "facts": [
+    {
+     "a": "sarangi"
+    },
+    {
+     "a": "kalawant"
+    }
+   ]
+  },
+  {
+   "id": "q48",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "Why is Ishaq Khan trying to get his brother-in-law moved, and how do artists' grades matter?",
+   "answer": "He wants his sister's husband, a sarangi player and staff artist, moved from AIR Lucknow to AIR Brahmpur; the Station Director would not swap a B-plus artist like Rafiq for a B-grade one.",
+   "pages": [
+    269,
+    272,
+    273
+   ],
+   "facts": [
+    {
+     "a": "Lucknow"
+    },
+    {
+     "a": "Rafiq"
+    },
+    {
+     "a": "B.plus|B\\+|grade",
+     "e": "B-plus"
+    }
+   ]
+  },
+  {
+   "id": "q49",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "What gift does Ishaq bring Tasneem and how does Saeeda Bai react to it?",
+   "answer": "A baby hill parakeet; Saeeda Bai says no more birds in the house ('One singer is enough') and tells him to get rid of it.",
+   "pages": [
+    150,
+    151,
+    153,
+    156
+   ],
+   "facts": [
+    {
+     "a": "parakeet|parrot",
+     "e": "parakeet"
+    },
+    {
+     "a": "no\\s+more\\s+birds|one\\s+singer|get\\s+rid",
+     "e": "no\\s+more\\s+birds"
+    }
+   ]
+  },
+  {
+   "id": "q50",
+   "type": "multi_hop",
+   "difficulty": "medium",
+   "question": "Why does Firoz come to Saeeda Bai's house, and what does he see there?",
+   "answer": "He brings the monthly envelope from his father the Nawab Sahib, and meets Tasneem carrying a birdcage.",
+   "pages": [
+    158,
+    159,
+    160
+   ],
+   "facts": [
+    {
+     "a": "envelope"
+    },
+    {
+     "a": "Tasneem"
+    },
+    {
+     "a": "cage"
+    }
+   ]
+  },
+  {
+   "id": "q51",
+   "type": "aggregation",
+   "difficulty": "easy",
+   "question": "What was served at the four-course dinner when the Coxes dined with Arun and Meenakshi?",
+   "answer": "Soup, smoked hilsa, roast chicken and a lemon souffle.",
+   "pages": [
+    400
+   ],
+   "facts": [
+    {
+     "a": "hilsa"
+    },
+    {
+     "a": "chicken"
+    },
+    {
+     "a": "souffl"
+    }
+   ]
+  },
+  {
+   "id": "q52",
+   "type": "inference",
+   "difficulty": "hard",
+   "question": "What does Meenakshi claim is the secret of her family's smoked hilsa, and how had she actually learned it?",
+   "answer": "She says the secret is the fire, with puffed rice and jaggery thrown on it, but she had only learned this that afternoon from the Mugh cook.",
+   "pages": [
+    400
+   ],
+   "facts": [
+    {
+     "a": "puffed\\s+rice"
+    },
+    {
+     "a": "jaggery|gur\\b",
+     "e": "jaggery"
+    },
+    {
+     "a": "cook",
+     "e": "Mugh\\s+cook"
+    }
+   ]
+  },
+  {
+   "id": "q53",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "What is Shamshu, and where do Varun and his friends buy it and at what price?",
+   "answer": "A cheap Chinese spirit, bought from a hole-in-the-wall place in Chinatown at eight annas a glass.",
+   "pages": [
+    401,
+    402,
+    404
+   ],
+   "facts": [
+    {
+     "a": "Chinese"
+    },
+    {
+     "a": "Chinatown"
+    },
+    {
+     "a": "eight\\s+annas|8\\s+annas",
+     "e": "eight\\s+annas"
+    }
+   ]
+  },
+  {
+   "id": "q54",
+   "type": "aggregation",
+   "difficulty": "medium",
+   "question": "Who are Mr Justice Chatterji's five children, and what occupies each of them?",
+   "answer": "Amit writes poetry, Meenakshi plays canasta, Dipankar seeks the Meaning of Life, Kakoli keeps the telephone busy, and Tapan (twelve or thirteen) goes to the boarding school Jheel.",
+   "pages": [
+    405
+   ],
+   "facts": [
+    {
+     "a": "Amit"
+    },
+    {
+     "a": "Dipankar"
+    },
+    {
+     "a": "Kakoli"
+    },
+    {
+     "a": "Tapan"
+    }
+   ]
+  },
+  {
+   "id": "q55",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "What is Amit Chatterji's new novel about?",
+   "answer": "A moneylender at the time of the Bengal Famine.",
+   "pages": [
+    417
+   ],
+   "facts": [
+    {
+     "a": "moneylender|money.lender",
+     "e": "moneylender"
+    },
+    {
+     "a": "famine"
+    }
+   ]
+  },
+  {
+   "id": "q56",
+   "type": "multi_hop",
+   "difficulty": "medium",
+   "question": "What breed was the dog Cuddles sold as, what is he really, and who was his most recent victim?",
+   "answer": "Sold as an Apso, he is a mutt with a large proportion of Tibetan terrier; his latest victim was the census-taker.",
+   "pages": [
+    412,
+    413
+   ],
+   "facts": [
+    {
+     "a": "Apso"
+    },
+    {
+     "a": "Tibetan"
+    },
+    {
+     "a": "census"
+    }
+   ]
+  },
+  {
+   "id": "q57",
+   "type": "multi_hop",
+   "difficulty": "medium",
+   "question": "Who is Biswas Babu, and what did he advise Meenakshi about her marriage?",
+   "answer": "He is the Chatterji family's old clerk (originally Mr Justice Chatterji's father's clerk) and he advised Meenakshi against marrying Arun.",
+   "pages": [
+    408,
+    409
+   ],
+   "facts": [
+    {
+     "a": "clerk"
+    },
+    {
+     "a": "against"
+    }
+   ]
+  },
+  {
+   "id": "q58",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "What book did Dr Ila Chattopadhyay write, and what did she think of the ghazal singer's performance she attended in Brahmpur?",
+   "answer": "She wrote 'Metaphysical Causality', a book about Donne; she found the ghazal singer (Saeeda something) dreadful and the self-pitying verse insipid.",
+   "pages": [
+    426,
+    428
+   ],
+   "facts": [
+    {
+     "a": "Metaphysical\\s+Causality"
+    },
+    {
+     "a": "dreadful|insipid|self.pitying|silly|didn.?t\\s+like|disliked",
+     "e": "Dreadful"
+    }
+   ]
+  },
+  {
+   "id": "q59",
+   "type": "inference",
+   "difficulty": "medium",
+   "question": "Why did the Chatterjis have reservations about Meenakshi's marriage to Arun?",
+   "answer": "He was not a Brahmo, Brahmin or Bengali, i.e. outside the community, and his family was struggling financially.",
+   "pages": [
+    408
+   ],
+   "facts": [
+    {
+     "a": "Brahmo|Brahmin|community",
+     "e": "Brahmo"
+    },
+    {
+     "a": "Bengali"
+    },
+    {
+     "a": "financ|money|poor|means",
+     "e": "financially"
+    }
+   ]
+  },
+  {
+   "id": "q60",
+   "type": "detail",
+   "difficulty": "medium",
+   "question": "What worries the Chatterjis about Kakoli's latest admirer, and what is his job?",
+   "answer": "He is a foreigner, a Second Secretary at the German Consulate General, who keeps inviting her to diplomatic functions.",
+   "pages": [
+    432,
+    433
+   ],
+   "facts": [
+    {
+     "a": "German"
+    },
+    {
+     "a": "Second\\s+Secretary"
+    }
+   ]
+  },
+  {
+   "id": "q61",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "From whom did Arun inherit his atrocious temper, and what shows that he alone could defy that person?",
+   "answer": "From his grandfather Dr Kishen Chand Seth; Arun once threatened to beat him up and took his Buick on a catastrophic joyride, yet was loved the more for it.",
+   "pages": [
+    69,
+    70,
+    84
+   ],
+   "facts": [
+    {
+     "a": "grandfather|Nana|Kishen\\s+Chand|Seth",
+     "e": "grandfather"
+    },
+    {
+     "a": "joyride|Buick|beat",
+     "e": "joyride"
+    }
+   ]
+  },
+  {
+   "id": "q62",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "What marriage was being arranged for Maan, with whom, and where did Dr Seth say the engagement stood?",
+   "answer": "Mahesh Kapoor had written to the Banaras people about a bride; Dr Seth heard that Maan was already engaged to the Banaras girl.",
+   "pages": [
+    13,
+    83
+   ],
+   "facts": [
+    {
+     "a": "Banaras"
+    },
+    {
+     "a": "engaged|engagement",
+     "e": "engaged"
+    }
+   ]
+  },
+  {
+   "id": "q63",
+   "type": "inference",
+   "difficulty": "medium",
+   "question": "Why does L.N. Agarwal gloat over Mahesh Kapoor's son?",
+   "answer": "Because of the gossip that Maan is involved with the courtesan Saeeda Bai ('lies at the feet of prostitutes').",
+   "pages": [
+    232
+   ],
+   "facts": [
+    {
+     "a": "Saeeda"
+    },
+    {
+     "a": "Maan|son",
+     "e": "son"
+    }
+   ]
+  },
+  {
+   "id": "q64",
+   "type": "inference",
+   "difficulty": "medium",
+   "question": "Whose breathlessness is said to resemble Pran's asthma, and what triggers it in April?",
+   "answer": "Mrs Mahesh Kapoor's; her allergy to neem blossoms.",
+   "pages": [
+    240
+   ],
+   "facts": [
+    {
+     "a": "neem"
+    },
+    {
+     "a": "Mrs\\.?\\s+(Mahesh\\s+)?Kapoor|wife|mother",
+     "e": "wife"
+    }
+   ]
+  },
+  {
+   "id": "q65",
+   "type": "inference",
+   "difficulty": "hard",
+   "question": "How does Ustad Majeed Khan's own background make his contempt for Ishaq Khan's instrument ironic?",
+   "answer": "Majeed Khan comes from a hereditary family of sarangi players and is trying to dissociate himself from that tradition, yet he calls sarangi players a distraction.",
+   "pages": [
+    273,
+    274,
+    275
+   ],
+   "facts": [
+    {
+     "a": "sarangi"
+    },
+    {
+     "a": "hereditary|family",
+     "e": "hereditary"
+    }
+   ]
+  },
+  {
+   "id": "q66",
+   "type": "false_premise",
+   "difficulty": "hard",
+   "question": "What is the name of Mrs Rupa Mehra's pet dog?",
+   "answer": "The text gives Mrs Rupa Mehra no dog; Cuddles is the Chatterji family's dog (Dipankar's).",
+   "pages": [
+    412
+   ],
+   "facts": [],
+   "answerable": false,
+   "correction": "Chatterji|no\\s+(pet\\s+)?dog"
+  },
+  {
+   "id": "q67",
+   "type": "false_premise",
+   "difficulty": "hard",
+   "question": "Why did Savita's father, Raghubir Mehra, give her away at her wedding?",
+   "answer": "He was dead (eight years); Savita was given away by her mother, Mrs Rupa Mehra.",
+   "pages": [
+    33
+   ],
+   "facts": [],
+   "answerable": false,
+   "correction": "(dead|died|death|late\\s+(husband|Raghubir)|passed\\s+away|deceased|no\\s+longer)|her\\s+mother|Mrs\\s+Rupa\\s+Mehra\\s+gave"
+  },
+  {
+   "id": "q68",
+   "type": "false_premise",
+   "difficulty": "hard",
+   "question": "Why did Dr Kishen Chand Seth give a speech at his granddaughter Savita's wedding?",
+   "answer": "He did not attend; he had gone off to Delhi for a conference of cardiologists.",
+   "pages": [
+    33,
+    34
+   ],
+   "facts": [],
+   "answerable": false,
+   "correction": "(did\\s+not|didn.t|never)\\s+attend|absent|not\\s+(present|there)|went\\s+(off\\s+)?to\\s+Delhi|chosen\\s+not|chose\\s+not|wilfully\\s+absented"
+  },
+  {
+   "id": "q69",
+   "type": "false_premise",
+   "difficulty": "hard",
+   "question": "How much dowry did the Mehras pay to the Kapoors for Savita's marriage?",
+   "answer": "None: Mahesh Kapoor never asked for any dowry and would not let Mrs Rupa Mehra pay for the wedding.",
+   "pages": [
+    12
+   ],
+   "facts": [],
+   "answerable": false,
+   "correction": "no\\s+dowry|(not|never|n.t)\\s+(ask|demand|request|expect)|did\\s+not\\s+ask|without\\s+(any\\s+)?dowry|nothing"
+  },
+  {
+   "id": "q70",
+   "type": "false_premise",
+   "difficulty": "hard",
+   "question": "Where did Pran and Savita spend their honeymoon in Darjeeling?",
+   "answer": "They went to Simla for a week's honeymoon, not Darjeeling.",
+   "pages": [
+    47
+   ],
+   "facts": [],
+   "answerable": false,
+   "correction": "Simla"
+  },
+  {
+   "id": "q71",
+   "type": "false_premise",
+   "difficulty": "hard",
+   "question": "Why did Lata attend Pran's class on the Romantic poets?",
+   "answer": "Lata attended his class on the Elizabethans, not the Romantic poets.",
+   "pages": [
+    9
+   ],
+   "facts": [],
+   "answerable": false,
+   "correction": "Elizabethan"
+  },
+  {
+   "id": "q72",
+   "type": "false_premise",
+   "difficulty": "hard",
+   "question": "Why did Lata decide to become a medical doctor like Malati?",
+   "answer": "She did not; Lata studies English at Brahmpur University (and once wanted to become a nun), while Malati is the medical student.",
+   "pages": [
+    9,
+    54,
+    59
+   ],
+   "facts": [],
+   "answerable": false,
+   "correction": "English|nun|(did\\s+not|didn.t|never)"
+  },
+  {
+   "id": "q73",
+   "type": "multi_hop",
+   "difficulty": "hard",
+   "question": "How did Pran overcome Professor Mishra's objection that Joyce could not be taught because of the rule about living writers?",
+   "answer": "The tradition excludes writers alive during the Second World War; Joyce died in 1941, but Pran pointed out that T.S. Eliot, who is alive, had been granted a waiver and proposed a waiver for Joyce too; Dr Narayanan and Dr Gupta agreed.",
+   "pages": [
+    117,
+    118,
+    119
+   ],
+   "facts": [
+    {
+     "a": "1941"
+    },
+    {
+     "a": "Eliot"
+    },
+    {
+     "a": "waiver|exception|exempt",
+     "e": "waiver"
+    }
+   ]
+  },
+  {
+   "id": "q74",
+   "type": "unanswerable",
+   "difficulty": "hard",
+   "question": "What is the full text of the poem Amit Chatterji wrote about the young bride?",
+   "answer": "The poem's text is never quoted; it is only mentioned in passing.",
+   "pages": [
+    419
+   ],
+   "facts": [],
+   "answerable": false,
+   "correction": null
+  },
+  {
+   "id": "q75",
+   "type": "unanswerable",
+   "difficulty": "hard",
+   "question": "Whom does Lata finally choose to marry at the end of the novel?",
+   "answer": "The provided portion of the book does not reach the end; her choice is not stated in the document.",
+   "pages": [],
+   "facts": [],
+   "answerable": false,
+   "correction": "has\\s+not\\s+(yet\\s+)?(decided|chosen)|undecided|still\\s+(deciding|considering)|not\\s+(yet\\s+)?(decided|resolved)"
+  }
+ ]
+}

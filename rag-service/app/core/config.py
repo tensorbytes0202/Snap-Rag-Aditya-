@@ -55,20 +55,13 @@ class Settings(BaseSettings):
     # (up to ~92s by default), so this must comfortably exceed that.
     LLM_REQUEST_TIMEOUT_SECONDS: float = 100.0
 
-    # ==========================================
-    # PDF page vision
-    # ==========================================
-    #
-    # Image-heavy pages (screenshots, diagrams) are described by a
-    # vision model instead of OCR, which loses which window/device a
-    # value belongs to. OCR is still the fallback when this is off or
-    # the gateway call fails. An empty VISION_MODEL means LLM_MODEL.
+    # Retries on rate limits (429), server errors and connection errors, with backoff
+    # that honours Retry-After. The free Gemini tier rate-limits often.
+    LLM_MAX_RETRIES: int = 6
 
-    PDF_VISION_ENABLED: bool = True
-
-    VISION_MODEL: str = ""
-
-    VISION_MAX_WORKERS: int = 4
+    # Requests started per minute at most (0 = no limit). The free Gemini tier
+    # allows 15 a minute per model.
+    LLM_REQUESTS_PER_MINUTE: int = 0
 
     # ==========================================
     # Embeddings
@@ -176,9 +169,6 @@ class Settings(BaseSettings):
     # many tokens. Each answer is cut to HISTORY_ANSWER_CHARS in the prompt.
     HISTORY_MAX_TOKENS: int = 1500
     HISTORY_ANSWER_CHARS: int = 800
-
-    # Requests per user per minute on the query endpoints (0 = unlimited).
-    QUERIES_PER_MINUTE: int = 20
 
     # ==========================================
     # Context Quality Monitor (CQM)

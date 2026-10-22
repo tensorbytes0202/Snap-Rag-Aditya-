@@ -78,7 +78,6 @@ def register_document(
     pages,
     chunks,
     uploaded_by: str | None = None,
-    overview: list[str] | None = None,
 ):
 
     with _lock:
@@ -93,7 +92,6 @@ def register_document(
             "pages": pages,
             "chunks": chunks,
             "uploaded_by": uploaded_by,
-            "overview": overview or [],
         }
 
         _save_registry(registry)
@@ -128,16 +126,6 @@ def get_documents(owner: str | None = None):
         })
 
     return documents
-
-
-def get_document_overview(document_name) -> list[str]:
-    """One gist line per summarized page ("Page 12: Verification result:
-    ..."), or [] for documents without one (text-only or legacy)."""
-
-    with _lock:
-        registry = _load_registry()
-
-    return registry.get(document_name, {}).get("overview", [])
 
 
 def find_conflicting_name(document_name) -> str | None:

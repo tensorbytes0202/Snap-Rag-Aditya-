@@ -1,5 +1,4 @@
 import logging
-import time
 
 from langsmith import traceable
 
@@ -34,8 +33,6 @@ def process_query(
 ):
     """`session` = (user_id, chat_id) of a chat: its verified snapshot
     memory is recalled and fused with the document context."""
-
-    started = time.perf_counter()
 
     _log.info("RAG query started (document=%s)", active_document)
 
@@ -106,6 +103,5 @@ def process_query(
         set_cache(cache_key, response)
 
     metrics.inc("snaprag_queries_total", outcome="answered" if best.supported else "unverified")
-    metrics.observe("snaprag_query_seconds", time.perf_counter() - started)
 
     return response

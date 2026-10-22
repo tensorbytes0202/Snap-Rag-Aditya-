@@ -40,7 +40,6 @@ _processing_names: set[str] = set()
 
 # Budget for the per-page gist lines sent with every query on this
 # document (see query_runner.Retrieval.top_context): roughly 1.5k tokens.
-OVERVIEW_MAX_CHARS = 6000
 
 
 class DocumentOwnershipError(Exception):
@@ -177,7 +176,6 @@ def ingest_document(
                 result["pages"],
                 result["total_chunks"],
                 uploaded_by=uploaded_by,
-                overview=result.pop("overview"),
             )
 
         finally:
@@ -326,27 +324,4 @@ def process_document(
         "total_chunks": len(chunks),
         "vectors_stored": len(embeddings),
         "already_indexed": False,
-        "overview": _build_overview(pdf_data["pages"]),
     }
-
-
-def _build_overview(pages) -> list[str]:
-    """One gist line per page that has one, stopping at OVERVIEW_MAX_CHARS
-    so a long document can't flood every query's context."""
-
-    overview, used = [], 0
-
-    for page in pages:
-
-        if not page.get("summary"):
-            continue
-
-        line = f"Page {page['page_number']}: {page['summary']}"
-        used += len(line)
-
-        if used > OVERVIEW_MAX_CHARS:
-            break
-
-        overview.append(line)
-
-    return overview

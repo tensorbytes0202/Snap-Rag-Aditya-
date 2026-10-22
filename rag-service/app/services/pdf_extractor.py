@@ -2,14 +2,11 @@ import io
 import logging
 import os
 import shutil
-from concurrent.futures import ThreadPoolExecutor
 
 import fitz
 import pytesseract
 from PIL import Image
 
-from app.core.config import settings
-from app.services.page_vision import describe_page
 
 _log = logging.getLogger(__name__)
 
@@ -43,20 +40,6 @@ _OCR_IMAGE_PAGE_MAX_TEXT_CHARS = 1000
 # Tesseract's own recommended resolution: high enough for accuracy,
 # without ballooning processing time on long documents.
 _OCR_DPI = 200
-
-# Vision models read 150 DPI JPEGs fine (~100 KB a page), which keeps
-# each gateway request small.
-_VISION_DPI = 150
-_VISION_JPEG_QUALITY = 85
-
-# Tail of the previous page sent along with each page, so a heading
-# printed just before a page break can be matched to its screenshots.
-_PREVIOUS_TEXT_CHARS = 300
-
-# Line prefixes the vision prompt uses for a page's gist (see
-# app/prompts/page_vision_prompt.py).
-_SUMMARY_PREFIXES = ("Verification result:", "Summary:")
-
 
 def _ocr_page(page) -> str:
     """Rasterizes the page and runs it through Tesseract. Never raises --
@@ -112,36 +95,6 @@ def _needs_visual(page, text_chars: int) -> bool:
     )
 
 
-def _describe_pages(document, texts, page_nums) -> dict[int, str]:
-    """Vision descriptions for `page_nums`, keyed by page index. Pages are
-    rendered here, one at a time (PyMuPDF documents aren't thread-safe);
-    only the gateway calls run in parallel."""
-
-    jobs = {}
-
-    for page_num in page_nums:
-        image = document.load_page(page_num).get_pixmap(dpi=_VISION_DPI).tobytes(
-            "jpeg", jpg_quality=_VISION_JPEG_QUALITY
-        )
-        previous_text = texts[page_num - 1].strip()[-_PREVIOUS_TEXT_CHARS:] if page_num else ""
-        jobs[page_num] = (image, texts[page_num].strip(), previous_text)
-
-    with ThreadPoolExecutor(max_workers=settings.VISION_MAX_WORKERS) as pool:
-        futures = {page_num: pool.submit(describe_page, *job) for page_num, job in jobs.items()}
-        return {page_num: future.result() for page_num, future in futures.items()}
-
-
-def _summary_lines(text: str) -> str:
-    """The "Verification result:" and "Summary:" lines the vision prompt asks
-    for, joined -- the page's one-line gist for the document overview."""
-
-    return " ".join(
-        line.strip()
-        for line in text.splitlines()
-        if line.strip().startswith(_SUMMARY_PREFIXES)
-    )
-
-
 def extract_pdf_data(pdf_path):
 
     document = fitz.open(pdf_path)
@@ -155,52 +108,28 @@ def extract_pdf_data(pdf_path):
         if _needs_visual(document.load_page(n), len(texts[n].strip()))
     ]
 
-    descriptions = (
-        _describe_pages(document, texts, visual_pages)
-        if settings.PDF_VISION_ENABLED and visual_pages
-        else {}
-    )
-
     pages = []
 
     for page_num in range(len(document)):
 
         text = texts[page_num]
-
         method = "text"
 
         if page_num in visual_pages:
 
-            extra = descriptions.get(page_num, "")
-            method = "vision"
+            extra = _ocr_page(document.load_page(page_num))
 
-            if not extra.strip():
-                extra = _ocr_page(document.load_page(page_num))
+            if extra.strip():
                 method = "ocr"
+                if len(text.strip()) < _OCR_MIN_TEXT_CHARS:
+                    text = extra
+                else:
+                    # Keep the caption and add what the screenshots say.
+                    text = text.rstrip() + "\n\n" + extra
 
-            if not extra.strip():
-                method = "text"
-            elif method == "vision" or len(text.strip()) < _OCR_MIN_TEXT_CHARS:
-                # A vision description already carries the page's own
-                # headings, in reading order next to their screenshots.
-                text = extra
-            else:
-                # Keep the caption and add what the screenshots say.
-                text = text.rstrip() + "\n\n" + extra
+        pages.append({"page_number": page_num + 1, "text": text, "method": method})
 
-        pages.append({
-            "page_number": page_num + 1,
-            "text": text,
-            "method": method,
-            "summary": _summary_lines(text) if method == "vision" else "",
-        })
-
-    _log.info(
-        "Extracted %d page(s): %d via vision, %d via OCR",
-        len(pages),
-        sum(p["method"] == "vision" for p in pages),
-        sum(p["method"] == "ocr" for p in pages),
-    )
+    _log.info("Extracted %d page(s): %d via OCR", len(pages), sum(p["method"] == "ocr" for p in pages))
 
     result = {
         "metadata": metadata,

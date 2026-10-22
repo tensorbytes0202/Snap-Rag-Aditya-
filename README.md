@@ -2,8 +2,6 @@
 
 **Verified Reconstruction of Snapshot Memory for Long-Conversation Document QA**
 
-![CI](https://github.com/tensorbytes0202/Snap-Rag-Aditya-/actions/workflows/ci.yml/badge.svg)
-
 SnapRAG is a retrieval-augmented question-answering system for long conversations about
 PDF documents. When a conversation grows, older turns are compressed into small
 *snapshots*. When that older information is needed again, SnapRAG rebuilds it from the
@@ -138,9 +136,7 @@ reduced.
 
 ### Indexing
 
-PDF text is extracted with PyMuPDF. Image-heavy pages (screenshots, diagrams) are read by a
-vision model, so values stay attached to the right device or window; Tesseract OCR is the
-fallback. Documents are split into parent (3000 chars) and child (800 chars) chunks,
+PDF text is extracted with PyMuPDF; image-only pages go through Tesseract OCR. Documents are split into parent (3000 chars) and child (800 chars) chunks,
 embedded with `BAAI/bge-small-en-v1.5`, and stored in Qdrant and a BM25 index.
 
 ---
@@ -173,7 +169,7 @@ related work and paper outline are in [`SNAPRAG_PLAN.md`](SNAPRAG_PLAN.md).
 | 4 | Adaptive budgeted retrieval: confidence signals, intent budgets, deeper batches | done |
 | 5 | Conversation state (memory updater) + session hand-off | done |
 | 6 | Long-conversation benchmark harness: baselines, ladder, ablations, scoring | done; full runs pending |
-| 7 | Tests (170+), health/metrics endpoints, rate limit, chat-resume UI | done |
+| 7 | Automated tests (no network needed) | done |
 
 ---
 
@@ -206,18 +202,16 @@ conversations at higher compression (Phase 6).
 │   ├── main.py                  app entry point
 │   ├── dev_token.py             prints a development access token
 │   ├── app/
-│   │   ├── api/routes/          query, upload, chats, pdf preview
+│   │   ├── api/routes/          query, upload, chats, auth
 │   │   ├── core/                settings, auth, startup
 │   │   ├── cache/               Redis answer + embedding caches (fail-open)
-│   │   ├── prompts/             generation, page vision, snapshot, reconstruction
+│   │   ├── prompts/             generation, snapshot, reconstruction
 │   │   ├── repositories/        Qdrant access
 │   │   └── services/            retrieval, generation, sessions, memory (see below)
 │   ├── tests/                   pytest suite (no network, models or services needed)
 │   └── benchmarks/              longconv/ (long-conversation benchmark), reconstruction_eval,
 │                                retrieval_eval, grounding_check + saved results
-├── frontend/                    Streamlit chat UI (port 8501)
-├── SNAPRAG_PLAN.md              research plan, related work, paper outline
-└── a.txt                        original design notes
+└── SNAPRAG_PLAN.md              research plan, related work, paper outline
 ```
 
 Memory-related services:
@@ -243,16 +237,15 @@ Requirements:
 
 - Python 3.10+
 - Docker (for Redis and Qdrant)
-- An OpenAI-compatible Chat Completions endpoint that accepts image input. The author's
-  setup is a separate LLM gateway (not in this repository) in front of Google Gemini.
-- Optional: [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki), used only when
-  the vision model is unavailable
+- An OpenAI-compatible Chat Completions endpoint (the benchmark needs a paid model, see
+  `SNAPRAG_PLAN.md`).
+- Optional: [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki), for image-only PDF pages
 
 ### 1. Install
 
 ```powershell
 python -m venv venv
-.\venv\Scripts\pip install -r rag-service\requirements.txt -r frontend\requirements.txt
+.\venv\Scripts\pip install -r rag-service\requirements.txt
 ```
 
 On macOS/Linux use `venv/bin/` instead of `.\venv\Scripts\`.
@@ -304,29 +297,17 @@ cd rag-service
 
 Run only one backend at a time. Two on the same port serve requests unpredictably.
 
-**Frontend** (port 8501):
+Get an access token (there is no login endpoint) and call the API:
 
 ```powershell
-cd frontend
-..\venv\Scripts\streamlit.exe run app.py
+cd rag-service
+..\venv\Scripts\python.exe dev_token.py
 ```
 
-Open http://localhost:8501 and either:
-
-- **Start free demo**: one click creates a limited guest session (no token needed), or
-- **I have an access token**: paste an unlimited token for yourself:
-
-  ```powershell
-  cd rag-service
-  ..\venv\Scripts\python.exe dev_token.py
-  ```
-
-  Setting `SNAPRAG_TOKEN` in the environment signs the app in automatically.
-
-Upload a PDF and ask questions. Each conversation is a chat: follow-ups use recent
-history, and older turns are compressed into snapshots and recalled as verified memory.
-The frontend finds the backend through `SNAPRAG_API_URL` (default
-`http://localhost:8003`); on Streamlit Cloud, set it in the app's secrets.
+Upload a PDF with `POST /upload`, start a chat with `POST /chats`, then ask with
+`POST /query` or `POST /query/stream` and a `chat_id`. Each conversation is a chat:
+follow-ups use recent history, and older turns are compressed into snapshots and
+recalled as verified memory.
 
 ### Demo limits
 
@@ -359,7 +340,6 @@ All endpoints except `GET /` and `POST /auth/guest` need `Authorization: Bearer 
 | GET | `/documents` | list the caller's documents and their active one |
 | POST | `/documents/active/{name}` | set the active document |
 | GET | `/documents/active` | get the active document |
-| GET | `/pdf/{filename}` | view a PDF the caller uploaded |
 | POST | `/query` | answer a question (JSON) |
 | POST | `/query/stream` | answer with server-sent events: `step`, `citations`, `token`, `verification`, `revised`, `error`, `done` (a `revised` event replaces the streamed answer) |
 | POST | `/chats` | start a chat, returns `chat_id` |
@@ -367,8 +347,6 @@ All endpoints except `GET /` and `POST /auth/guest` need `Authorization: Bearer 
 | GET | `/chats/{id}/messages` | the chat's recorded turns |
 | GET | `/chats/{id}/memory` | the chat's CIS log, snapshots and conversation state |
 | GET | `/chats/{id}/handoff` | where the conversation stands (resume document) |
-| GET | `/healthz` | dependency status (503 when Qdrant, storage or the LLM config is down) |
-| GET | `/metrics` | Prometheus text: queries, LLM calls, corrections, latency |
 
 Query body: `{"question": "...", "chat_id": "<optional>"}`. Without `chat_id` nothing is
 stored and no memory is used. With it, the `/query` response includes `retrieved_memory`
@@ -398,10 +376,8 @@ All are environment variables (see `rag-service/app/core/config.py`):
 | `STOP_CONFIDENCE` / `MAX_EXTRA_BATCHES` | 0.80 / 3 | AB-RAG threshold; cap on extra batches (0 = fixed-k RAG). The per-intent budget is in `query_router.py` |
 | `CONF_W_MODEL` / `CONF_W_SIMILARITY` / `CONF_W_SPREAD` | 0.50 / 0.25 / 0.25 | weights of the three confidence signals |
 | `CQM_FIXED_INTERVAL` / `CQM_CHECK_CONTRADICTION` | 0 / true | ablation: snapshot every N turns; the per-turn contradiction call |
-| `QUERIES_PER_MINUTE` | 20 | per-user request rate (0 = unlimited) |
 | `MEMORY_ROOT` | unset | keep chats and memory elsewhere than `STORAGE_DIR` (benchmarks use a temp folder) |
 | `RECONSTRUCTION_MODEL` | `LLM_MODEL` | model that rebuilds and verifies memory |
-| `PDF_VISION_ENABLED` | true | vision model for image-heavy pages |
 
 ---
 
@@ -455,6 +431,30 @@ cd rag-service
 Use at least 80 turns. A run costs roughly `turns × 5` LLM calls per variant plus memory upkeep;
 it saves after every variant and `--resume <file>` continues an interrupted run. LCM, Mem0, A-MEM
 and LLMLingua are not included: they are separate systems and are not re-implemented here.
+
+### Architecture comparison on a second document (`benchmarks/docqa`)
+
+75 questions on the novel *A Suitable Boy* (scanned, 483 pages), written by reading the book:
+single facts, numbers, lists, multi-page questions that need facts from several chapters,
+inference, and nine unanswerable or false-premise questions. Every question lists the facts an
+answer needs (patterns, no LLM judge) and the pages that hold them; `validate.py` checks the
+patterns against the PDF. Fourteen architectures answer the same questions over the same index and
+the same LLM: no retrieval, dense, BM25, hybrid, hybrid + cross-encoder (5 and 10 pages), simplified
+re-implementations of published methods (HyDE, CRAG, Self-RAG prompted, IRCoT, Adaptive-RAG, AB-RAG;
+not the authors' trained models or code), SnapRAG without extra batches and SnapRAG with AB-RAG.
+
+```powershell
+cd rag-service
+..\venv\Scripts\python.exe -m benchmarks.docqa.validate                    # dataset against the PDF
+..\venv\Scripts\python.exe -m benchmarks.docqa.run --retrieval-only        # no LLM: retrieval metrics
+..\venv\Scripts\python.exe -m benchmarks.docqa.run --workers 4             # everything, with the LLM
+..\venv\Scripts\python.exe -m benchmarks.docqa.report benchmarks\results\docqa_<time>.json
+```
+
+The run writes a results file and a Markdown report (accuracy with 95% intervals, retrieval
+quality, cost, accuracy by question type, paired differences against SnapRAG, the questions
+SnapRAG got wrong). `--resume <file>` continues an interrupted run. The document must be
+uploaded (indexed) first.
 
 ### Tests
 
