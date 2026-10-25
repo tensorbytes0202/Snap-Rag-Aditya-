@@ -4,6 +4,10 @@ import json
 import os
 import re
 
+import pytest
+
+from benchmarks.docqa import stats
+from benchmarks.docqa.export import to_latex
 from benchmarks.docqa.report import render
 from benchmarks.docqa.scoring import score_answer, score_retrieval
 
@@ -93,7 +97,8 @@ def test_report_compares_architectures_on_the_same_questions():
     assert "## Answer quality" in text and "## Retrieval quality" in text
     assert "`snaprag` against every other architecture" in text
     assert "better" in text                      # the paired interval excludes zero
-    assert "| `snaprag` | **100.0% (100-100)**" in text
+    assert "| `snaprag` | **12/12 = 100.0% (74-100)**" in text       # an exact interval, not (100-100)
+    assert "Holm" in text
 
 
 def test_a_retrieval_only_report_has_no_answer_tables():
@@ -105,3 +110,79 @@ def test_a_retrieval_only_report_has_no_answer_tables():
     text = render(result)
 
     assert "## Retrieval quality" in text and "## Answer quality" not in text
+
+
+# ---------- statistics ----------
+
+def test_exact_intervals_do_not_collapse_at_zero_or_all():
+    low, high = stats.exact_interval(12, 12)
+
+    assert high == 1.0 and 0.7 < low < 0.8                    # 12 of 12 is not "100% (100-100)"
+    assert stats.exact_interval(0, 30)[0] == 0.0 and 0.1 < stats.exact_interval(0, 30)[1] < 0.2
+
+
+def test_sign_test_and_holm_adjustment():
+    assert stats.sign_p(8, 0) == pytest.approx(2 / 256)
+    assert stats.sign_p(0, 0) == 1.0
+    assert stats.holm({"a": 0.01, "b": 0.04, "c": 0.5}) == pytest.approx({"a": 0.03, "b": 0.08, "c": 0.5})
+
+
+def test_paired_p_uses_the_sign_test_for_outcomes_and_wilcoxon_for_scores():
+    assert stats.paired_p([1, 1, 1, 1, 0, 0]) == stats.sign_p(4, 0)
+    assert stats.paired_p([0.3, 0.2, 0.4, 0.1, 0.25, 0.35, 0.15, 0.2]) < 0.05
+    assert stats.paired_p([0, 0, 0]) == 1.0
+
+
+def test_auroc_of_a_confidence():
+    assert stats.auroc([0.9, 0.8, 0.3, 0.2], [1, 1, 0, 0]) == 1.0
+    assert stats.auroc([0.5, 0.5, 0.5, 0.5], [1, 0, 1, 0]) == 0.5
+    assert stats.auroc([0.9, 0.8], [1, 1]) is None
+
+
+BS = chr(92)
+
+
+def test_latex_tables_scale_to_the_page_and_have_unique_labelled_captions():
+    markdown = "\n".join([
+        '# Run A', '', '## Answer quality', '', '| Architecture | Accuracy |', '|---|---|', '| `x_y` | 5/10 = 50.0% (24-76) |', '',
+        '# Run B', '', '## Answer quality', '', '| Architecture | Accuracy |', '|---|---|', '| `x_y` | 1/2 |', ''])
+
+    tex = to_latex(markdown)
+
+    assert tex.count(BS + 'resizebox') == 2 and tex.count(BS + 'label{tab:') == 2
+    assert 'x' + BS + '_y' in tex and 'Run A -- Answer quality' in tex and 'Run B -- Answer quality' in tex
+
+
+# ---------- calibration ----------
+
+def attempt(level, correct, passages):
+    return {"signals": {"model": level, "similarity": level, "spread": level}, "supported": True, "passages": passages, "correct": float(correct)}
+
+
+def test_calibration_replays_attempts_and_prefers_the_threshold_that_reads_more_when_it_helps():
+    from benchmarks.docqa import calibrate
+
+    data = {f"q{i}": [attempt(0.5, 0, 3), attempt(0.9, 1, 6)] for i in range(6)}
+
+    assert calibrate.replay(data["q0"], (0.5, 0.25, 0.25), 0.8)["correct"] == 1.0         # 0.5 < 0.8, so it reads the second attempt
+    assert calibrate.replay(data["q0"], (0.5, 0.25, 0.25), 0.4)["correct"] == 0.0         # 0.5 >= 0.4, so it stops at the first
+    assert calibrate.replay(data["q0"], (0.5, 0.25, 0.25), 0.8, limit=1)["attempts"] == 1
+
+    best = calibrate.search(data, list(data))[0]
+
+    assert best["accuracy"] == 1.0 and best["threshold"] > 0.5
+
+
+def test_an_unsupported_answer_never_reaches_the_threshold():
+    from benchmarks.docqa import calibrate
+
+    assert calibrate.confidence({"model": 1, "similarity": 1, "spread": 1}, False, (0.5, 0.25, 0.25), 0.8) == 0.79
+
+
+def test_memqa_scoring():
+    from benchmarks.memqa.run import f1, score
+
+    assert f1("She went on 7 May 2023.", "7 May 2023") >= 0.5
+    assert score({"abstain": False, "gold": "GPS system"}, "The gps system failed.")["correct"]
+    assert score({"abstain": True, "gold": None}, "That is not mentioned in the conversation.")["correct"]
+    assert not score({"abstain": True, "gold": None}, "She chose Paris.")["correct"]

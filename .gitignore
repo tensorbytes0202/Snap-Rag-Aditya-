@@ -30,3 +30,12 @@ Thumbs.db
 
 # Node (only if the frontend later gets a build step)
 node_modules/
+
+# Benchmark runtime output: chat copies (long paths, still being written), failed runs, logs, downloaded datasets
+rag-service/benchmarks/results/chats/
+rag-service/benchmarks/results/old_failed/
+rag-service/benchmarks/results/*.log
+rag-service/benchmarks/results/*.err
+rag-service/benchmarks/results/*.tmp
+rag-service/benchmarks/results/memqa_smoke.json
+rag-service/benchmarks/data/

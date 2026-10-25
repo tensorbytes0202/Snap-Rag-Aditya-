@@ -39,6 +39,9 @@ from app.services.bm_25_service import bm25_search
 from app.services.generation_service import generate_answer
 from app.services.hyde_service import generate_hyde
 from app.services.llm_provider import chat
+from app.services.metadata_parser import extract_metadata
+from app.services.query_planner import fallback_subqueries, guess_query_type, plan_query
+from app.services.query_router import get_retrieval_config
 from app.services.query_runner import Retrieval, run_retrieval
 from app.services.reranker_services import rerank_chunks
 from app.services.retrieval_pipeline import retrieve_chunks
@@ -273,12 +276,17 @@ def _adaptive(question, document, offline=False, plan=None):
         return {"answer": "No relevant information found in the uploaded documents.", "chunks": [], "context": ""}
 
     first = make_attempt(question, found, None, None, "initial")
+    attempts = [first]
+
+    def deeper_attempt(deeper, strategy):
+        attempts.append(make_attempt(question, deeper, None, None, strategy))
+        return attempts[-1]
 
     best, _ = run_batches(
         question,
         first,
         lambda **overrides: run_retrieval(question, document, **overrides),
-        lambda deeper, strategy: make_attempt(question, deeper, None, None, strategy),
+        deeper_attempt,
     )
 
     return {
@@ -287,7 +295,38 @@ def _adaptive(question, document, offline=False, plan=None):
         "context": best.found.top_context,
         "confidence": best.confidence,
         "supported": best.supported,
+        # Every attempt with its confidence signals and answer, so a threshold and the
+        # weights can be replayed offline (see calibrate.py).
+        "attempts": [{"strategy": a.strategy, "confidence": a.confidence, "signals": a.signals, "supported": a.supported,
+                      "passages": len(a.found.top_chunks), "answer": a.answer} for a in attempts],
     }
+
+
+def _plan(question, planner: bool) -> dict:
+    """A query plan without HyDE: from the LLM planner, or the heuristic one (no LLM)."""
+
+    plan = plan_query(question) if planner else {"query_type": guess_query_type(question), "subqueries": fallback_subqueries(question)}
+    metadata = extract_metadata(question) or {}
+    metadata["document_name"] = None
+    metadata.setdefault("page", None)
+
+    return {"query_type": plan["query_type"], "subqueries": plan["subqueries"], "hyde": None, "metadata": metadata,
+            "config": get_retrieval_config(plan["query_type"])}
+
+
+def _retrieval_only(plan_for):
+    """SnapRAG's retrieval alone (nothing is answered): to see what its planner and HyDE do to the pages read."""
+
+    def run(question, document, offline=False):
+        found = run_retrieval(question, document, plan=plan_for(question))
+        return {"answer": None, "chunks": found.top_chunks, "context": found.top_context}
+
+    return run
+
+
+def _no_planner(question, document, offline=False):
+
+    return _adaptive(question, document, offline, plan=_plan(question, planner=False))
 
 
 def _abrag(question, document, offline=False):
@@ -312,13 +351,21 @@ ARCHITECTURES = {
     "ircot": ("reasoning steps interleaved with retrieval", _ircot, {}, "IRCoT, Trivedi et al. 2022 (arXiv 2212.10509); 3 steps, no few-shot demos"),
     "adaptive_rag": ("route by question complexity", _adaptive_rag, {}, "Adaptive-RAG, Jeong et al. 2024 (arXiv 2403.14403); LLM prompt instead of the trained classifier"),
     "abrag": ("answer, score confidence, read more while it is low", _abrag, {}, "AB-RAG, arXiv 2606.29090 (known from its summary); same confidence signals, one fixed first batch and budget"),
-    "snaprag_fixed": ("SnapRAG retrieval + verification, AB-RAG off", _adaptive, {"MAX_EXTRA_BATCHES": 0}, "this work"),
+    "snaprag_fixed_k": ("SnapRAG retrieval + confidence check, no extra batches (fixed-k)", _adaptive, {"MAX_EXTRA_BATCHES": 0}, "this work"),
     "snaprag": ("SnapRAG: intent-sized batches + AB-RAG", _adaptive, {}, "this work"),
+    # Diagnostics, not competitors:
+    "snaprag_fixed_k_noplan": ("fixed-k SnapRAG with the heuristic plan (no LLM planner, no HyDE)", _no_planner, {"MAX_EXTRA_BATCHES": 0}, "ablation"),
+    "snaprag_retrieval": ("SnapRAG retrieval only: LLM planner + HyDE, nothing answered", _retrieval_only(lambda q: None), {}, "ablation"),
+    "snaprag_retrieval_planner": ("SnapRAG retrieval only: LLM planner, no HyDE", _retrieval_only(lambda q: _plan(q, True)), {}, "ablation"),
+    "snaprag_calib": ("SnapRAG that never stops early: every attempt is kept for calibration", _adaptive, {"STOP_CONFIDENCE": 1.01}, "calibration"),
 }
+
+# Not part of the comparison tables: they feed the planner ablation and the calibration.
+DIAGNOSTIC = ("snaprag_fixed_k_noplan", "snaprag_retrieval", "snaprag_retrieval_planner", "snaprag_calib")
 
 # The architectures whose retrieval can be measured without any LLM call
 # (SnapRAG falls back to its offline planner there).
-RETRIEVAL_ONLY = ["dense_k5", "bm25_k5", "hybrid_k5", "hybrid_rerank_k5", "hybrid_rerank_k10", "snaprag_fixed"]
+RETRIEVAL_ONLY = ["dense_k5", "bm25_k5", "hybrid_k5", "hybrid_rerank_k5", "hybrid_rerank_k10", "snaprag_fixed_k"]
 
 
 def apply_settings(overrides: dict) -> dict:

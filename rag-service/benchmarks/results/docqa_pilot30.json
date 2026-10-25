@@ -12,14 +12,14 @@
    "hybrid_k5": "dense + BM25 (RRF) top-5",
    "hybrid_rerank_k5": "hybrid + cross-encoder top-5",
    "hybrid_rerank_k10": "hybrid + cross-encoder top-10",
-   "snaprag_fixed": "SnapRAG retrieval + verification, AB-RAG off",
    "snaprag": "SnapRAG: intent-sized batches + AB-RAG",
    "abrag": "answer, score confidence, read more while it is low",
    "hyde": "retrieve with a hypothetical answer",
    "crag": "grade the pages, re-search if none is relevant",
    "self_rag": "one answer per page, a critic picks one",
    "ircot": "reasoning steps interleaved with retrieval",
-   "adaptive_rag": "route by question complexity"
+   "adaptive_rag": "route by question complexity",
+   "snaprag_fixed_k": "SnapRAG retrieval + verification, AB-RAG off"
   },
   "ids": [
    "q01",
@@ -55,7 +55,6 @@
   ],
   "sources": {
    "hybrid_rerank_k5": "standard advanced RAG",
-   "snaprag_fixed": "this work",
    "snaprag": "this work",
    "abrag": "AB-RAG, arXiv 2606.29090 (known from its summary); same confidence signals, one fixed first batch and budget",
    "hyde": "HyDE, Gao et al. 2022 (arXiv 2212.10496)",
@@ -63,8 +62,10 @@
    "self_rag": "Self-RAG, Asai et al. 2023 (arXiv 2310.11511); prompted, not the fine-tuned model",
    "ircot": "IRCoT, Trivedi et al. 2022 (arXiv 2212.10509); 3 steps, no few-shot demos",
    "adaptive_rag": "Adaptive-RAG, Jeong et al. 2024 (arXiv 2403.14403); LLM prompt instead of the trained classifier",
-   "hybrid_rerank_k10": "standard advanced RAG, more pages"
-  }
+   "hybrid_rerank_k10": "standard advanced RAG, more pages",
+   "snaprag_fixed_k": "this work"
+  },
+  "note": "pilot: 30-question sample, run before token counting and calibration were added"
  },
  "rows": [
   {
@@ -10113,7 +10114,7 @@
    "page_recall": 0.75
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q01",
    "type": "multi_hop",
    "difficulty": "medium",
@@ -10141,7 +10142,7 @@
    "page_recall": 0.5
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q03",
    "type": "numeric",
    "difficulty": "easy",
@@ -10166,7 +10167,7 @@
    "page_recall": 0.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q06",
    "type": "multi_hop",
    "difficulty": "medium",
@@ -10197,7 +10198,7 @@
    "page_recall": 0.5
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q08",
    "type": "inference",
    "difficulty": "hard",
@@ -10222,7 +10223,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q11",
    "type": "inference",
    "difficulty": "medium",
@@ -10250,7 +10251,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q13",
    "type": "detail",
    "difficulty": "medium",
@@ -10275,7 +10276,7 @@
    "page_recall": 0.5
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q16",
    "type": "detail",
    "difficulty": "medium",
@@ -10303,7 +10304,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q18",
    "type": "inference",
    "difficulty": "hard",
@@ -10328,7 +10329,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q21",
    "type": "multi_hop",
    "difficulty": "medium",
@@ -10356,7 +10357,7 @@
    "page_recall": 0.3333333333333333
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q23",
    "type": "detail",
    "difficulty": "easy",
@@ -10384,7 +10385,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q26",
    "type": "detail",
    "difficulty": "medium",
@@ -10409,7 +10410,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q28",
    "type": "detail",
    "difficulty": "medium",
@@ -10437,7 +10438,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q31",
    "type": "numeric",
    "difficulty": "medium",
@@ -10465,7 +10466,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q33",
    "type": "multi_hop",
    "difficulty": "hard",
@@ -10493,7 +10494,7 @@
    "page_recall": 0.3333333333333333
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q36",
    "type": "multi_hop",
    "difficulty": "hard",
@@ -10521,7 +10522,7 @@
    "page_recall": 0.6666666666666666
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q38",
    "type": "aggregation",
    "difficulty": "hard",
@@ -10555,7 +10556,7 @@
    "page_recall": 0.6666666666666666
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q41",
    "type": "numeric",
    "difficulty": "medium",
@@ -10580,7 +10581,7 @@
    "page_recall": 0.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q43",
    "type": "aggregation",
    "difficulty": "medium",
@@ -10608,7 +10609,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q46",
    "type": "inference",
    "difficulty": "hard",
@@ -10636,7 +10637,7 @@
    "page_recall": 0.6666666666666666
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q48",
    "type": "multi_hop",
    "difficulty": "hard",
@@ -10664,7 +10665,7 @@
    "page_recall": 0.3333333333333333
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q51",
    "type": "aggregation",
    "difficulty": "easy",
@@ -10689,7 +10690,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q53",
    "type": "detail",
    "difficulty": "medium",
@@ -10717,7 +10718,7 @@
    "page_recall": 0.6666666666666666
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q56",
    "type": "multi_hop",
    "difficulty": "medium",
@@ -10748,7 +10749,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q58",
    "type": "multi_hop",
    "difficulty": "hard",
@@ -10776,7 +10777,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q61",
    "type": "multi_hop",
    "difficulty": "hard",
@@ -10804,7 +10805,7 @@
    "page_recall": 0.6666666666666666
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q63",
    "type": "inference",
    "difficulty": "medium",
@@ -10831,7 +10832,7 @@
    "page_recall": 1.0
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q66",
    "type": "false_premise",
    "difficulty": "hard",
@@ -10853,7 +10854,7 @@
    "declined": true
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q68",
    "type": "false_premise",
    "difficulty": "hard",
@@ -10875,7 +10876,7 @@
    "declined": true
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q71",
    "type": "false_premise",
    "difficulty": "hard",
@@ -10899,7 +10900,7 @@
    "declined": true
   },
   {
-   "arch": "snaprag_fixed",
+   "arch": "snaprag_fixed_k",
    "id": "q73",
    "type": "multi_hop",
    "difficulty": "hard",

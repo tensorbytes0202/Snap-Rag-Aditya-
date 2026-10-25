@@ -119,7 +119,9 @@ def build_demo_chat() -> tuple[str, str]:
     return user, chat_id
 
 
-def best_snapshot(snapshots: list[dict], question: str) -> dict:
+def best_snapshot(snapshots: list[dict], question: str, turns: list[dict] | None = None) -> dict:
+    """The snapshot whose span of the conversation fits the question best. With `turns` it is matched on the original
+    turns (the lossy summary can miss the very fact the probe asks for); without, on the rendered snapshot."""
 
     from app.api.dependencies.embedding import get_embedding_model
     from app.services.snapshot_engine import render_snapshot
@@ -130,7 +132,12 @@ def best_snapshot(snapshots: list[dict], question: str) -> dict:
     model = get_embedding_model()
     q = model.encode(question, normalize_embeddings=True)
 
-    return max(snapshots, key=lambda s: float(q @ model.encode(render_snapshot(s), normalize_embeddings=True)))
+    def text(s):
+        if turns is None:
+            return render_snapshot(s)
+        return " ".join(t["question"] + " " + t["answer"] for t in turns if s["from_turn"] <= t["turn"] <= s["to_turn"]) or render_snapshot(s)
+
+    return max(snapshots, key=lambda s: float(q @ model.encode(text(s), normalize_embeddings=True)))
 
 
 def evaluate(user: str, chat_id: str, probes: list[str], judge_model: str) -> dict:
@@ -151,7 +158,7 @@ def evaluate(user: str, chat_id: str, probes: list[str], judge_model: str) -> di
 
     for question in probes:
 
-        snapshot = best_snapshot(snapshots, question)
+        snapshot = best_snapshot(snapshots, question, get_turns(user, chat_id))
         archive = [t for t in get_turns(user, chat_id) if snapshot["from_turn"] <= t["turn"] <= snapshot["to_turn"]]
         truth = render_archive(archive) + "\n\n" + render_evidence(load_evidence(snapshot))
 
@@ -207,6 +214,7 @@ def evaluate(user: str, chat_id: str, probes: list[str], judge_model: str) -> di
                 "kept": result["kept"],
                 "dropped_sentences": result["dropped"],
                 "unsupported_sentences": unsupported,
+                "sources": truth,       # what a sentence may be supported by: the archive and the pages the snapshot cites
             }
             rows.append(row)
 

@@ -1,0 +1,1133 @@
+{
+ "meta": {
+  "dataset": "longmemeval",
+  "systems": "no_memory,full_history,archive,full",
+  "seed": 0,
+  "model": "gemini-3.5-flash-lite",
+  "date": "2026-10-25 00:46",
+  "commit": "24e59b2*",
+  "upkeep_every": 10
+ },
+ "runs": [
+  {
+   "system": "no_memory",
+   "id": "gpt4_0a05b494",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "gpt4_0a05b494",
+     "system": "no_memory",
+     "type": "temporal-reasoning",
+     "question": "(Today is 2023/05/28 (Sun) 15:31.) Who did I meet first, the woman selling jam at the farmer's market or the tourist from Australia?",
+     "gold": "the woman selling jam at the farmer's market",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 4681,
+     "tokens_out": 122,
+     "active_seconds": 25.82,
+     "answer": "You have not told me that in this conversation.",
+     "correct": false,
+     "f1": 0.0,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full_history",
+   "id": "gpt4_0a05b494",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "gpt4_0a05b494",
+     "system": "full_history",
+     "type": "temporal-reasoning",
+     "question": "(Today is 2023/05/28 (Sun) 15:31.) Who did I meet first, the woman selling jam at the farmer's market or the tourist from Australia?",
+     "gold": "the woman selling jam at the farmer's market",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 15509,
+     "tokens_out": 231,
+     "active_seconds": 23.16,
+     "answer": "The text states: You met the jam maker at the farmer's market two weeks ago on a Saturday morning and the tourist from Australia last Thursday. \n\nApplying this: You met the jam maker at the farmer's market first.\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- You met the jam maker at the farmer's market two weeks ago on a Saturday morning\n- the tourist from Australia last Thursday\n- You met the jam maker at the farmer's market first.",
+     "correct": false,
+     "f1": 0.147,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "archive",
+   "id": "gpt4_0a05b494",
+   "build_calls": 3,
+   "build_tokens_in": 8768,
+   "build_tokens_out": 65,
+   "snapshots": 1,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "gpt4_0a05b494",
+     "system": "archive",
+     "type": "temporal-reasoning",
+     "question": "(Today is 2023/05/28 (Sun) 15:31.) Who did I meet first, the woman selling jam at the farmer's market or the tourist from Australia?",
+     "gold": "the woman selling jam at the farmer's market",
+     "abstain": false,
+     "error": null,
+     "calls": 5,
+     "tokens_in": 5928,
+     "tokens_out": 223,
+     "active_seconds": 29.74,
+     "answer": "You have not told me that in this conversation.",
+     "correct": false,
+     "f1": 0.0,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full",
+   "id": "gpt4_0a05b494",
+   "build_calls": 4,
+   "build_tokens_in": 10189,
+   "build_tokens_out": 898,
+   "snapshots": 1,
+   "state_items": 12,
+   "rows": [
+    {
+     "id": "gpt4_0a05b494",
+     "system": "full",
+     "type": "temporal-reasoning",
+     "question": "(Today is 2023/05/28 (Sun) 15:31.) Who did I meet first, the woman selling jam at the farmer's market or the tourist from Australia?",
+     "gold": "the woman selling jam at the farmer's market",
+     "abstain": false,
+     "error": null,
+     "calls": 5,
+     "tokens_in": 11460,
+     "tokens_out": 244,
+     "active_seconds": 11.89,
+     "answer": "Based on our conversation, you met the jam maker at the farmer's market first (two weeks ago on a Saturday morning), before meeting the tourist from Australia on the subway last Thursday.",
+     "correct": false,
+     "f1": 0.333,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "no_memory",
+   "id": "gpt4_93159ced_abs",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "gpt4_93159ced_abs",
+     "system": "no_memory",
+     "type": "temporal-reasoning/abstention",
+     "question": "(Today is 2023/05/23 (Tue) 10:59.) How long have I been working before I started my current job at Google?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 10206,
+     "tokens_out": 129,
+     "active_seconds": 5.79,
+     "answer": "You have not told me that in this conversation.",
+     "correct": true,
+     "f1": null,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full_history",
+   "id": "gpt4_93159ced_abs",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "gpt4_93159ced_abs",
+     "system": "full_history",
+     "type": "temporal-reasoning/abstention",
+     "question": "(Today is 2023/05/23 (Tue) 10:59.) How long have I been working before I started my current job at Google?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 17169,
+     "tokens_out": 116,
+     "active_seconds": 6.33,
+     "answer": "You have not told me that in this conversation.",
+     "correct": true,
+     "f1": null,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "archive",
+   "id": "gpt4_93159ced_abs",
+   "build_calls": 3,
+   "build_tokens_in": 8478,
+   "build_tokens_out": 822,
+   "snapshots": 1,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "gpt4_93159ced_abs",
+     "system": "archive",
+     "type": "temporal-reasoning/abstention",
+     "question": "(Today is 2023/05/23 (Tue) 10:59.) How long have I been working before I started my current job at Google?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 4,
+     "tokens_in": 11961,
+     "tokens_out": 128,
+     "active_seconds": 4.68,
+     "answer": "You have not told me that in this conversation.",
+     "correct": true,
+     "f1": null,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full",
+   "id": "gpt4_93159ced_abs",
+   "build_calls": 4,
+   "build_tokens_in": 9738,
+   "build_tokens_out": 898,
+   "snapshots": 1,
+   "state_items": 9,
+   "rows": [
+    {
+     "id": "gpt4_93159ced_abs",
+     "system": "full",
+     "type": "temporal-reasoning/abstention",
+     "question": "(Today is 2023/05/23 (Tue) 10:59.) How long have I been working before I started my current job at Google?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 4,
+     "tokens_in": 12088,
+     "tokens_out": 144,
+     "active_seconds": 4.43,
+     "answer": "You have not told me that in this conversation.",
+     "correct": true,
+     "f1": null,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "no_memory",
+   "id": "e6041065",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "e6041065",
+     "system": "no_memory",
+     "type": "multi-session",
+     "question": "(Today is 2023/05/28 (Sun) 15:36.) What percentage of packed shoes did I wear on my last trip?",
+     "gold": "40%",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 11298,
+     "tokens_out": 124,
+     "active_seconds": 6.04,
+     "answer": "You have not told me that in this conversation.",
+     "correct": false,
+     "f1": 0.0,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full_history",
+   "id": "e6041065",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "e6041065",
+     "system": "full_history",
+     "type": "multi-session",
+     "question": "(Today is 2023/05/28 (Sun) 15:36.) What percentage of packed shoes did I wear on my last trip?",
+     "gold": "40%",
+     "abstain": false,
+     "error": null,
+     "calls": 5,
+     "tokens_in": 26607,
+     "tokens_out": 298,
+     "active_seconds": 13.64,
+     "answer": "Based on our conversation, you packed 5 pairs of shoes on your last trip and wore 2 pairs, which is **40%**.\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- You packed 5 pairs of shoes on your last trip and wore 2 pairs, which is 40%.",
+     "correct": true,
+     "f1": 0.039,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "archive",
+   "id": "e6041065",
+   "build_calls": 2,
+   "build_tokens_in": 7632,
+   "build_tokens_out": 571,
+   "snapshots": 1,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "e6041065",
+     "system": "archive",
+     "type": "multi-session",
+     "question": "(Today is 2023/05/28 (Sun) 15:36.) What percentage of packed shoes did I wear on my last trip?",
+     "gold": "40%",
+     "abstain": false,
+     "error": null,
+     "calls": 7,
+     "tokens_in": 14847,
+     "tokens_out": 330,
+     "active_seconds": 11.6,
+     "answer": "You wore 40% of the shoes you packed on your last trip (you packed 5 pairs and wore 2).",
+     "correct": true,
+     "f1": 0.1,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "full",
+   "id": "e6041065",
+   "build_calls": 3,
+   "build_tokens_in": 9117,
+   "build_tokens_out": 1047,
+   "snapshots": 1,
+   "state_items": 18,
+   "rows": [
+    {
+     "id": "e6041065",
+     "system": "full",
+     "type": "multi-session",
+     "question": "(Today is 2023/05/28 (Sun) 15:36.) What percentage of packed shoes did I wear on my last trip?",
+     "gold": "40%",
+     "abstain": false,
+     "error": null,
+     "calls": 4,
+     "tokens_in": 9149,
+     "tokens_out": 129,
+     "active_seconds": 18.38,
+     "answer": "You have not told me that in this conversation.",
+     "correct": false,
+     "f1": 0.0,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "no_memory",
+   "id": "09ba9854_abs",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "09ba9854_abs",
+     "system": "no_memory",
+     "type": "multi-session/abstention",
+     "question": "(Today is 2023/05/28 (Sun) 06:58.) How much will I save by taking the bus from the airport to my hotel instead of a taxi?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 9,
+     "tokens_in": 98318,
+     "tokens_out": 528,
+     "active_seconds": 52.66,
+     "answer": "| Feature | Taxi | Airport bus |\n| :--- | :--- | :--- |\n| Cost / Fare | Around $60 (or ¥6,000 - ¥25,000 depending on the airport and time) | Not found in the retrieved text |\n| Savings | Not found in the retrieved text | Not found in the retrieved text |\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- Around $60 (or ¥6,000 - ¥25,000 depending on the airport and time)",
+     "correct": true,
+     "f1": null,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full_history",
+   "id": "09ba9854_abs",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "09ba9854_abs",
+     "system": "full_history",
+     "type": "multi-session/abstention",
+     "question": "(Today is 2023/05/28 (Sun) 06:58.) How much will I save by taking the bus from the airport to my hotel instead of a taxi?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 9,
+     "tokens_in": 117500,
+     "tokens_out": 900,
+     "active_seconds": 63.46,
+     "answer": "| Feature | Airport Bus | Taxi |\n| :--- | :--- | :--- |\n| Cost / Fare | Around $10-$20 | Around $60 |\n| Savings (Taking the bus instead of a taxi) | $40 to $50 | Not found in the retrieved text |\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- Airport Bus cost is around $10-$20\n- Taxi cost is around $60\n- Savings of $40 to $50",
+     "correct": true,
+     "f1": null,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "archive",
+   "id": "09ba9854_abs",
+   "build_calls": 2,
+   "build_tokens_in": 7449,
+   "build_tokens_out": 1065,
+   "snapshots": 1,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "09ba9854_abs",
+     "system": "archive",
+     "type": "multi-session/abstention",
+     "question": "(Today is 2023/05/28 (Sun) 06:58.) How much will I save by taking the bus from the airport to my hotel instead of a taxi?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 5,
+     "tokens_in": 16971,
+     "tokens_out": 442,
+     "active_seconds": 19.32,
+     "answer": "| Feature | Airport Limousine Bus | Taxi |\n| :--- | :--- | :--- |\n| Fare | ¥3,200 one way (from Narita International Airport to Shinjuku Station) | Around ¥15,000 - ¥20,000 (Daytime from Narita Airport) / ¥18,000 - ¥25,000 (Late night); around ¥20,000 - ¥30,000 (to Shinjuku) |\n| Savings by choosing this option | You save approximately ¥11,800 to ¥26,800 compared to taking a taxi | Not found in the retrieved text |",
+     "correct": true,
+     "f1": null,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full",
+   "id": "09ba9854_abs",
+   "build_calls": 3,
+   "build_tokens_in": 8357,
+   "build_tokens_out": 1681,
+   "snapshots": 1,
+   "state_items": 5,
+   "rows": [
+    {
+     "id": "09ba9854_abs",
+     "system": "full",
+     "type": "multi-session/abstention",
+     "question": "(Today is 2023/05/28 (Sun) 06:58.) How much will I save by taking the bus from the airport to my hotel instead of a taxi?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 11,
+     "tokens_in": 104029,
+     "tokens_out": 808,
+     "active_seconds": 61.72,
+     "answer": "| Feature | Taxi | Airport Limousine Bus |\n| :--- | :--- | :--- |\n| **Cost (Daytime: 5:00 AM - 10:00 PM)** | ¥15,000 - ¥20,000 (around $140 - $180 USD) | ¥3,200 one way |\n| **Cost (Late Night: 10:00 PM - 5:00 AM)** | ¥18,000 - ¥25,000 (around $160 - $220 USD) | Not found in the retrieved text |\n| **Travel Time** | Not found in the retrieved text | Approximately 60-90 minutes to Shinjuku Station |\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- USD conversions for taxi costs (e.g., around $140 - $180 USD) are not supported by the context or memory.",
+     "correct": true,
+     "f1": null,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "no_memory",
+   "id": "c4ea545c",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "c4ea545c",
+     "system": "no_memory",
+     "type": "knowledge-update",
+     "question": "(Today is 2023/08/18 (Fri) 04:17.) Do I go to the gym more frequently than I did previously?",
+     "gold": "Yes",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 17617,
+     "tokens_out": 121,
+     "active_seconds": 17.79,
+     "answer": "You have not told me that in this conversation.",
+     "correct": false,
+     "f1": 0.0,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full_history",
+   "id": "c4ea545c",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "c4ea545c",
+     "system": "full_history",
+     "type": "knowledge-update",
+     "question": "(Today is 2023/08/18 (Fri) 04:17.) Do I go to the gym more frequently than I did previously?",
+     "gold": "Yes",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 16089,
+     "tokens_out": 171,
+     "active_seconds": 14.53,
+     "answer": "Yes, you previously mentioned going to the gym three times a week (Tuesdays, Thursdays, and Saturdays), but more recently you stated that you go four times a week.\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- You previously mentioned going to the gym three times a week\n- more recently you stated that you go four times a week",
+     "correct": true,
+     "f1": 0.032,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "archive",
+   "id": "c4ea545c",
+   "build_calls": 3,
+   "build_tokens_in": 7492,
+   "build_tokens_out": 1113,
+   "snapshots": 1,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "c4ea545c",
+     "system": "archive",
+     "type": "knowledge-update",
+     "question": "(Today is 2023/08/18 (Fri) 04:17.) Do I go to the gym more frequently than I did previously?",
+     "gold": "Yes",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 10861,
+     "tokens_out": 125,
+     "active_seconds": 13.15,
+     "answer": "You have not told me that in this conversation.",
+     "correct": false,
+     "f1": 0.0,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full",
+   "id": "c4ea545c",
+   "build_calls": 4,
+   "build_tokens_in": 8459,
+   "build_tokens_out": 1000,
+   "snapshots": 1,
+   "state_items": 7,
+   "rows": [
+    {
+     "id": "c4ea545c",
+     "system": "full",
+     "type": "knowledge-update",
+     "question": "(Today is 2023/08/18 (Fri) 04:17.) Do I go to the gym more frequently than I did previously?",
+     "gold": "Yes",
+     "abstain": false,
+     "error": null,
+     "calls": 6,
+     "tokens_in": 25662,
+     "tokens_out": 251,
+     "active_seconds": 8.76,
+     "answer": "Based on our conversation:\n\n- You stated earlier that you went to the gym on Tuesdays, Thursdays, and Saturdays (three times a week). \n- You later stated that you have been consistent with your routine four times a week. \n\nApplying this, yes, you go to the gym more frequently than you did previously.",
+     "correct": true,
+     "f1": 0.038,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "no_memory",
+   "id": "031748ae_abs",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "031748ae_abs",
+     "system": "no_memory",
+     "type": "knowledge-update/abstention",
+     "question": "(Today is 2023/06/03 (Sat) 02:36.) How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 6935,
+     "tokens_out": 163,
+     "active_seconds": 61.42,
+     "answer": "Based on our conversation so far, you lead a team of 5 engineers (PDF p. 11).\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- you lead a team of 5 engineers (PDF p. 11).",
+     "correct": false,
+     "f1": null,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "full_history",
+   "id": "031748ae_abs",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "031748ae_abs",
+     "system": "full_history",
+     "type": "knowledge-update/abstention",
+     "question": "(Today is 2023/06/03 (Sat) 02:36.) How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 10057,
+     "tokens_out": 162,
+     "active_seconds": 20.17,
+     "answer": "Based on our conversation so far, you lead a team of 4 engineers in your new role.\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- You lead a team of 4 engineers in your new role.",
+     "correct": false,
+     "f1": null,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "archive",
+   "id": "031748ae_abs",
+   "build_calls": 3,
+   "build_tokens_in": 7200,
+   "build_tokens_out": 762,
+   "snapshots": 1,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "031748ae_abs",
+     "system": "archive",
+     "type": "knowledge-update/abstention",
+     "question": "(Today is 2023/06/03 (Sat) 02:36.) How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 5,
+     "tokens_in": 9384,
+     "tokens_out": 216,
+     "active_seconds": 22.16,
+     "answer": "Based on our conversation, you lead a team of 5 engineers (PDF p. N format not applicable as this is from conversation history).\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- You lead a team of 5 engineers.",
+     "correct": false,
+     "f1": null,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "full",
+   "id": "031748ae_abs",
+   "build_calls": 4,
+   "build_tokens_in": 8304,
+   "build_tokens_out": 1179,
+   "snapshots": 1,
+   "state_items": 6,
+   "rows": [
+    {
+     "id": "031748ae_abs",
+     "system": "full",
+     "type": "knowledge-update/abstention",
+     "question": "(Today is 2023/06/03 (Sat) 02:36.) How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 5,
+     "tokens_in": 9745,
+     "tokens_out": 193,
+     "active_seconds": 23.58,
+     "answer": "Based on our conversation so far, you lead a team of 4 engineers in your role as a Senior Software Engineer.",
+     "correct": false,
+     "f1": null,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "no_memory",
+   "id": "06878be2",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "06878be2",
+     "system": "no_memory",
+     "type": "single-session-preference",
+     "question": "(Today is 2023/05/30 (Tue) 05:04.) Can you suggest some accessories that would complement my current photography setup?",
+     "gold": "The user would prefer suggestions of Sony-compatible accessories or high-quality photography gear that can enhance their photography experience. They may not prefer suggestions of other brands' equipment or low-quality gear.",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 7722,
+     "tokens_out": 111,
+     "active_seconds": 27.08,
+     "answer": "Insufficient information found.",
+     "correct": false,
+     "f1": 0.0,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full_history",
+   "id": "06878be2",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "06878be2",
+     "system": "full_history",
+     "type": "single-session-preference",
+     "question": "(Today is 2023/05/30 (Tue) 05:04.) Can you suggest some accessories that would complement my current photography setup?",
+     "gold": "The user would prefer suggestions of Sony-compatible accessories or high-quality photography gear that can enhance their photography experience. They may not prefer suggestions of other brands' equipment or low-quality gear.",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 11985,
+     "tokens_out": 238,
+     "active_seconds": 16.93,
+     "answer": "Based on our conversation, some accessories that would complement your setup include a protective case or pouch for your Godox V1 flash (such as the Godox V1 Hard Case or Vello Flash Pouch), an external battery pack like the Anker PowerCore 20000 PD, and lens cleaning supplies like a soft microfiber cloth and blower bulb.\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- Godox V1 flash and associated hard case or pouch\n- Anker PowerCore 20000 PD external battery pack\n- Lens cleaning supplies like a soft microfiber cloth and blower bulb",
+     "correct": false,
+     "f1": 0.126,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "archive",
+   "id": "06878be2",
+   "build_calls": 2,
+   "build_tokens_in": 6865,
+   "build_tokens_out": 1772,
+   "snapshots": 1,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "06878be2",
+     "system": "archive",
+     "type": "single-session-preference",
+     "question": "(Today is 2023/05/30 (Tue) 05:04.) Can you suggest some accessories that would complement my current photography setup?",
+     "gold": "The user would prefer suggestions of Sony-compatible accessories or high-quality photography gear that can enhance their photography experience. They may not prefer suggestions of other brands' equipment or low-quality gear.",
+     "abstain": false,
+     "error": null,
+     "calls": 5,
+     "tokens_in": 12811,
+     "tokens_out": 891,
+     "active_seconds": 29.34,
+     "answer": "Insufficient information found.",
+     "correct": false,
+     "f1": 0.0,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full",
+   "id": "06878be2",
+   "build_calls": 3,
+   "build_tokens_in": 7714,
+   "build_tokens_out": 2044,
+   "snapshots": 1,
+   "state_items": 6,
+   "rows": [
+    {
+     "id": "06878be2",
+     "system": "full",
+     "type": "single-session-preference",
+     "question": "(Today is 2023/05/30 (Tue) 05:04.) Can you suggest some accessories that would complement my current photography setup?",
+     "gold": "The user would prefer suggestions of Sony-compatible accessories or high-quality photography gear that can enhance their photography experience. They may not prefer suggestions of other brands' equipment or low-quality gear.",
+     "abstain": false,
+     "error": null,
+     "calls": 5,
+     "tokens_in": 12464,
+     "tokens_out": 694,
+     "active_seconds": 28.58,
+     "answer": "Insufficient information found.",
+     "correct": false,
+     "f1": 0.0,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "no_memory",
+   "id": "a40e080f",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "a40e080f",
+     "system": "no_memory",
+     "type": "single-session-assistant",
+     "question": "(Today is 2023/05/29 (Mon) 07:37.) I was going through our previous conversation and I was wondering if you could remind me of the two companies you mentioned that prioritize employee safety and well-being like Triumvirate?",
+     "gold": "Patagonia and Southwest Airlines.",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 9452,
+     "tokens_out": 161,
+     "active_seconds": 16.52,
+     "answer": "Based on our earlier conversation, the two companies mentioned are:\n\n1. Patagonia\n2. Southwest Airlines\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- Patagonia\n- Southwest Airlines",
+     "correct": false,
+     "f1": 0.176,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "full_history",
+   "id": "a40e080f",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "a40e080f",
+     "system": "full_history",
+     "type": "single-session-assistant",
+     "question": "(Today is 2023/05/29 (Mon) 07:37.) I was going through our previous conversation and I was wondering if you could remind me of the two companies you mentioned that prioritize employee safety and well-being like Triumvirate?",
+     "gold": "Patagonia and Southwest Airlines.",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 9885,
+     "tokens_out": 157,
+     "active_seconds": 14.56,
+     "answer": "The two companies mentioned earlier that prioritize employee safety and well-being are:\n\n1. Patagonia\n2. Southwest Airlines\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- Patagonia\n- Southwest Airlines",
+     "correct": false,
+     "f1": 0.216,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "archive",
+   "id": "a40e080f",
+   "build_calls": 1,
+   "build_tokens_in": 529,
+   "build_tokens_out": 11,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "a40e080f",
+     "system": "archive",
+     "type": "single-session-assistant",
+     "question": "(Today is 2023/05/29 (Mon) 07:37.) I was going through our previous conversation and I was wondering if you could remind me of the two companies you mentioned that prioritize employee safety and well-being like Triumvirate?",
+     "gold": "Patagonia and Southwest Airlines.",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 9649,
+     "tokens_out": 160,
+     "active_seconds": 34.16,
+     "answer": "The two companies mentioned earlier are:\n1. Patagonia\n2. Southwest Airlines\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- Patagonia and Southwest Airlines prioritize employee safety and well-being like Triumvirate.",
+     "correct": true,
+     "f1": 0.205,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "full",
+   "id": "a40e080f",
+   "build_calls": 1,
+   "build_tokens_in": 529,
+   "build_tokens_out": 11,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "a40e080f",
+     "system": "full",
+     "type": "single-session-assistant",
+     "question": "(Today is 2023/05/29 (Mon) 07:37.) I was going through our previous conversation and I was wondering if you could remind me of the two companies you mentioned that prioritize employee safety and well-being like Triumvirate?",
+     "gold": "Patagonia and Southwest Airlines.",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 9722,
+     "tokens_out": 254,
+     "active_seconds": 14.57,
+     "answer": "Based on our previous conversation, the two companies mentioned are:\n\n1. **Patagonia** - An outdoor clothing and gear company that offers flexible work arrangements, generous maternity and paternity leave, and invests in employee education and wellness.\n2. **Southwest Airlines** - An airline that emphasizes its employees (referred to as \"Warriors\"), offering top-of-the-line training, generous benefits packages, and a positive work environment.\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- Patagonia is mentioned as prioritizing employee safety and well-being.\n- Southwest Airlines is mentioned as prioritizing employee safety and well-being.",
+     "correct": false,
+     "f1": 0.081,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "no_memory",
+   "id": "25e5aa4f",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "25e5aa4f",
+     "system": "no_memory",
+     "type": "single-session-user",
+     "question": "(Today is 2023/05/21 (Sun) 09:52.) Where did I complete my Bachelor's degree in Computer Science?",
+     "gold": "University of California, Los Angeles (UCLA)",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 3995,
+     "tokens_out": 133,
+     "active_seconds": 17.42,
+     "answer": "You have not told me that in this conversation.",
+     "correct": false,
+     "f1": 0.0,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full_history",
+   "id": "25e5aa4f",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "25e5aa4f",
+     "system": "full_history",
+     "type": "single-session-user",
+     "question": "(Today is 2023/05/21 (Sun) 09:52.) Where did I complete my Bachelor's degree in Computer Science?",
+     "gold": "University of California, Los Angeles (UCLA)",
+     "abstain": false,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 7530,
+     "tokens_out": 137,
+     "active_seconds": 14.06,
+     "answer": "You completed your undergraduate degree in Computer Science from UCLA.\n\n---\n⚠️ Parts of this answer could not be confirmed from the retrieved text:\n- You completed your undergraduate degree in Computer Science from UCLA.",
+     "correct": false,
+     "f1": 0.105,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "archive",
+   "id": "25e5aa4f",
+   "build_calls": 2,
+   "build_tokens_in": 5673,
+   "build_tokens_out": 808,
+   "snapshots": 1,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "25e5aa4f",
+     "system": "archive",
+     "type": "single-session-user",
+     "question": "(Today is 2023/05/21 (Sun) 09:52.) Where did I complete my Bachelor's degree in Computer Science?",
+     "gold": "University of California, Los Angeles (UCLA)",
+     "abstain": false,
+     "error": null,
+     "calls": 5,
+     "tokens_in": 5414,
+     "tokens_out": 202,
+     "active_seconds": 21.36,
+     "answer": "The text states:\n- VERIFIED MEMORY: The user completed their undergraduate degree in CS from UCLA.\n\nApplying this: You completed your Bachelor's degree in Computer Science at UCLA.",
+     "correct": false,
+     "f1": 0.059,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "full",
+   "id": "25e5aa4f",
+   "build_calls": 3,
+   "build_tokens_in": 6505,
+   "build_tokens_out": 1064,
+   "snapshots": 1,
+   "state_items": 10,
+   "rows": [
+    {
+     "id": "25e5aa4f",
+     "system": "full",
+     "type": "single-session-user",
+     "question": "(Today is 2023/05/21 (Sun) 09:52.) Where did I complete my Bachelor's degree in Computer Science?",
+     "gold": "University of California, Los Angeles (UCLA)",
+     "abstain": false,
+     "error": null,
+     "calls": 4,
+     "tokens_in": 5354,
+     "tokens_out": 136,
+     "active_seconds": 12.05,
+     "answer": "You completed your undergraduate degree in Computer Science from UCLA.",
+     "correct": false,
+     "f1": 0.125,
+     "declined": false
+    }
+   ]
+  },
+  {
+   "system": "no_memory",
+   "id": "19b5f2b3_abs",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "19b5f2b3_abs",
+     "system": "no_memory",
+     "type": "single-session-user/abstention",
+     "question": "(Today is 2023/05/27 (Sat) 17:25.) How long was I in Korea for?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 6919,
+     "tokens_out": 115,
+     "active_seconds": 5.45,
+     "answer": "You have not told me that in this conversation.",
+     "correct": true,
+     "f1": null,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full_history",
+   "id": "19b5f2b3_abs",
+   "build_calls": 0,
+   "build_tokens_in": 0,
+   "build_tokens_out": 0,
+   "snapshots": 0,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "19b5f2b3_abs",
+     "system": "full_history",
+     "type": "single-session-user/abstention",
+     "question": "(Today is 2023/05/27 (Sat) 17:25.) How long was I in Korea for?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 9923,
+     "tokens_out": 117,
+     "active_seconds": 5.23,
+     "answer": "You have not told me that in this conversation.",
+     "correct": true,
+     "f1": null,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "archive",
+   "id": "19b5f2b3_abs",
+   "build_calls": 2,
+   "build_tokens_in": 5269,
+   "build_tokens_out": 1543,
+   "snapshots": 1,
+   "state_items": 0,
+   "rows": [
+    {
+     "id": "19b5f2b3_abs",
+     "system": "archive",
+     "type": "single-session-user/abstention",
+     "question": "(Today is 2023/05/27 (Sat) 17:25.) How long was I in Korea for?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 6919,
+     "tokens_out": 122,
+     "active_seconds": 8.45,
+     "answer": "You have not told me that in this conversation.",
+     "correct": true,
+     "f1": null,
+     "declined": true
+    }
+   ]
+  },
+  {
+   "system": "full",
+   "id": "19b5f2b3_abs",
+   "build_calls": 3,
+   "build_tokens_in": 6081,
+   "build_tokens_out": 2575,
+   "snapshots": 1,
+   "state_items": 14,
+   "rows": [
+    {
+     "id": "19b5f2b3_abs",
+     "system": "full",
+     "type": "single-session-user/abstention",
+     "question": "(Today is 2023/05/27 (Sat) 17:25.) How long was I in Korea for?",
+     "gold": null,
+     "abstain": true,
+     "error": null,
+     "calls": 3,
+     "tokens_in": 7577,
+     "tokens_out": 120,
+     "active_seconds": 18.26,
+     "answer": "You have not told me that in this conversation.",
+     "correct": true,
+     "f1": null,
+     "declined": true
+    }
+   ]
+  }
+ ]
+}

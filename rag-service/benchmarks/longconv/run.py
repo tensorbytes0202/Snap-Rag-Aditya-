@@ -21,6 +21,7 @@ import argparse
 import contextlib
 import json
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -31,6 +32,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
+from benchmarks.atomic import dump_json  # noqa: E402
 from benchmarks.longconv import report, scoring  # noqa: E402
 from benchmarks.longconv import variants as variant_defs  # noqa: E402
 from benchmarks.longconv.dryrun import DryRunSystem  # noqa: E402
@@ -202,6 +204,7 @@ def play(variant, script: list[dict], spec: dict, *, ask, conversation: Conversa
 
     refusal = spec["refusal_pattern"]
     turns_out, probes_out, failed = [], [], set()
+    streak = 0
 
     for item in script:
 
@@ -217,6 +220,12 @@ def play(variant, script: list[dict], spec: dict, *, ask, conversation: Conversa
 
         row = {"turn": turn, "kind": item["kind"], "seconds": round(seconds, 2), "query_calls": answer_calls["n"],
                "prompt_tokens": sum(prompts) if prompts else None, "maintenance_calls": 0, "error": error}
+
+        streak = streak + 1 if error else 0
+
+        if streak >= 5:
+            # A conversation with holes proves nothing; stop instead of burning hours of quota on more failures.
+            raise RuntimeError(f"{variant.name}: 5 turns in a row failed ({error[:120]}); stopping so the variant can be rerun")
 
         if response is None:
             failed.add(turn)
@@ -239,6 +248,11 @@ def play(variant, script: list[dict], spec: dict, *, ask, conversation: Conversa
             conversation.upkeep()
 
         row["maintenance_calls"] = upkeep_calls["n"]
+        # Provider-reported tokens of the whole turn (answer and memory upkeep), and the seconds
+        # of the answer without the wait for the request-rate limit.
+        row["tokens_in"] = answer_calls["prompt_tokens"] + upkeep_calls["prompt_tokens"]
+        row["tokens_out"] = answer_calls["completion_tokens"] + upkeep_calls["completion_tokens"]
+        row["active_seconds"] = round(max(0.0, seconds - answer_calls["wait"]), 2)
         turns_out.append(row)
 
         if item["kind"] == "probe":
@@ -333,7 +347,7 @@ def live_summarizer(summary: str, turn: dict) -> str:
 
 def run_benchmark(spec: dict, names: list[str], *, turns: int, seed: int, repeats: int, document: str,
                   dry_run: bool, out_path: str | None, resume: dict | None = None, retries: int = 3,
-                  wait: float = 30.0, pause: float = 0.0, remembers: int = 40, log=print) -> list[dict]:
+                  wait: float = 30.0, pause: float = 0.0, remembers: int = 40, keep_chats: str | None = None, log=print) -> list[dict]:
     """Every (variant, repeat) once; returns the run records."""
 
     from app.services.session_store import create_chat
@@ -367,25 +381,42 @@ def run_benchmark(spec: dict, names: list[str], *, turns: int, seed: int, repeat
                 def ask(question, history, session):
                     return process_query(question, document, history, session)
 
-            with overridden(variant.settings), isolated_storage(), answers_not_cached():
+            with overridden({**variant.settings, "FOLLOWUPS_ENABLED": False}), isolated_storage(), answers_not_cached():
                 conversation = Conversation(variant, USER, create_chat(USER), None if dry_run else live_summarizer,
                                            upkeep=not dry_run)
                 runs.append(play(variant, script, spec, ask=ask, conversation=conversation, document=document,
                                  repeat=repeat, retries=retries, wait=wait, pause=pause, log=log))
 
+                if keep_chats and not dry_run:
+                    # The chat and its snapshots, for benchmarks/longconv/ladder.py (the temporary folder is deleted).
+                    from app.core.config import settings
+                    shutil.copytree(settings.MEMORY_ROOT, os.path.join(keep_chats, f"{name}_r{repeat}"), dirs_exist_ok=True)
+
             if out_path:
+                from app.core.config import settings
                 save(out_path, runs, {"turns": turns, "seed": seed, "repeats": repeats, "variants": names,
-                                      "dry_run": dry_run, "document": document})
+                                      "dry_run": dry_run, "document": document, "model": settings.LLM_MODEL,
+                                      "date": time.strftime("%Y-%m-%d %H:%M"), "commit": git_commit()})
 
     return runs
 
 
+def git_commit() -> str:
+    """The short git commit of the run, with a * when the tree has uncommitted changes."""
+
+    import subprocess
+
+    try:
+        head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=ROOT, check=True).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, cwd=ROOT, check=True).stdout.strip()
+        return head + ("*" if dirty else "")
+    except Exception:
+        return "unknown"
+
+
 def save(path: str, runs: list[dict], meta: dict) -> None:
 
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump({"meta": meta, "runs": runs}, f, ensure_ascii=False, indent=1)
+    dump_json({"meta": meta, "runs": runs}, path)
 
 
 def comparisons(runs: list[dict], reference: str = "no_memory") -> list[str]:
@@ -428,6 +459,7 @@ def main(argv=None):
     parser.add_argument("--retries", type=int, default=3, help="attempts per turn when the LLM is rate limited")
     parser.add_argument("--wait", type=float, default=30.0, help="seconds between those attempts")
     parser.add_argument("--pause", type=float, default=0.0, help="seconds to wait between turns")
+    parser.add_argument("--keep-chats", help="copy each finished conversation (chat and snapshots) into this folder, for ladder.py")
     parser.add_argument("--dry-run", action="store_true", help="a stand-in system, to test the benchmark itself")
     parser.add_argument("--remembers", type=int, default=40, help="dry run only: turns the stand-in remembers")
     parser.add_argument("--list", action="store_true", help="list the variants and exit")
@@ -463,7 +495,7 @@ def main(argv=None):
     runs = run_benchmark(
         spec, names, turns=args.turns, seed=args.seed, repeats=args.repeats, document=args.document or spec["document"],
         dry_run=args.dry_run, out_path=out, resume=resume, retries=args.retries, wait=args.wait, pause=args.pause,
-        remembers=args.remembers,
+        remembers=args.remembers, keep_chats=args.keep_chats,
     )
 
     text = report.render_markdown(report.summarize(runs)) + "\n" + "\n".join(comparisons(runs))

@@ -57,11 +57,15 @@ class Settings(BaseSettings):
 
     # Retries on rate limits (429), server errors and connection errors, with backoff
     # that honours Retry-After. The free Gemini tier rate-limits often.
-    LLM_MAX_RETRIES: int = 6
+    LLM_MAX_RETRIES: int = 5
 
     # Requests started per minute at most (0 = no limit). The free Gemini tier
     # allows 15 a minute per model.
     LLM_REQUESTS_PER_MINUTE: int = 0
+
+    # Suggest follow-up questions with each answer (one extra LLM call). The benchmarks turn it off:
+    # the follow-ups play no part in the answer.
+    FOLLOWUPS_ENABLED: bool = True
 
     # ==========================================
     # Embeddings

@@ -13,6 +13,7 @@ import argparse
 import json
 import logging
 import os
+import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -30,6 +31,7 @@ from app.core.config import settings
 from app.core.exceptions import LLMProviderError
 from app.core.metrics import count_llm_calls
 from app.services import llm_provider
+from benchmarks.atomic import dump_json
 from benchmarks.docqa import architectures
 from benchmarks.docqa.report import write_report
 from benchmarks.docqa.scoring import score_answer, score_retrieval
@@ -49,6 +51,17 @@ def offline_llm() -> None:
             module.chat = refuse
 
 
+def _commit() -> str:
+    """The short git commit the run was made from (with a * when the tree has uncommitted changes)."""
+
+    try:
+        head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=ROOT, check=True).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, cwd=ROOT, check=True).stdout.strip()
+        return head + ("*" if dirty else "")
+    except Exception:
+        return "unknown"
+
+
 def ask(arch: str, item: dict, document: str, offline: bool) -> dict:
     """One architecture answering one question; a row of the results file."""
 
@@ -64,10 +77,12 @@ def ask(arch: str, item: dict, document: str, offline: bool) -> dict:
         return {**row, "error": f"{type(exc).__name__}: {exc}"[:300]}
 
     pages = sorted({chunk["page"] for chunk in out["chunks"] if chunk.get("page")})
-    row.update(seconds=round(time.time() - started, 2), calls=calls["n"], pages=pages, passages=len(out["chunks"]),
+    seconds = time.time() - started
+    row.update(seconds=round(seconds, 2), active_seconds=round(max(0.0, seconds - calls["wait"]), 2), calls=calls["n"],
+               tokens_in=calls["prompt_tokens"], tokens_out=calls["completion_tokens"], pages=pages, passages=len(out["chunks"]),
                context_chars=len(out["context"]), answer=out["answer"])
 
-    for key in ("confidence", "supported", "route"):
+    for key in ("confidence", "supported", "route", "attempts"):
         if key in out:
             row[key] = out[key]
 
@@ -105,9 +120,10 @@ def main() -> None:
             sys.exit(f"unknown architecture {name!r}; choose from {', '.join(architectures.ARCHITECTURES)}")
 
     path = args.resume or args.out or os.path.join(ROOT, "benchmarks", "results", f"docqa_{time.strftime('%Y%m%d_%H%M%S')}.json")
-    saved = json.load(open(path, encoding="utf-8")) if args.resume else None
+    saved = json.load(open(path, encoding="utf-8")) if args.resume and os.path.exists(path) else None
     result = saved or {"meta": {"document": data["document"], "model": settings.LLM_MODEL, "started": time.strftime("%Y-%m-%d %H:%M"),
-                                "retrieval_only": args.retrieval_only, "questions": len(questions)}, "rows": []}
+                                "retrieval_only": args.retrieval_only, "questions": len(questions), "commit": _commit(), "seed": 0,
+                                "temperature": 0, "sample": args.sample}, "rows": []}
     result["meta"]["ids"] = [item["id"] for item in questions]
     result["meta"]["questions"] = len(questions)
     result["meta"]["archs"] ={**result["meta"].get("archs", {}), **{name: architectures.ARCHITECTURES[name][0] for name in names}}
@@ -128,8 +144,7 @@ def main() -> None:
     query_service.set_cache = lambda key, value: None
 
     def save() -> None:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        json.dump(result, open(path, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+        dump_json(result, path)
 
     for name in names:
 
@@ -147,6 +162,7 @@ def main() -> None:
         finally:
             architectures.apply_settings(previous)
 
+    result["meta"]["finished"] = time.strftime("%Y-%m-%d %H:%M")
     save()
     report = write_report(result, os.path.splitext(path)[0] + ".md")
     print(f"\nResults: {path}\nReport:  {report}")

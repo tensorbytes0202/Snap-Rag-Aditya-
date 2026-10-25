@@ -1,0 +1,144 @@
+\documentclass[10pt,twocolumn]{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs,graphicx,amsmath,hyperref,xcolor,enumitem,longtable}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+
+\newcommand{\todo}[1]{{\color{red}[#1]}}      % a number or sentence still to be filled from the results
+\newcommand{\sys}{\textsc{SnapRAG}}
+\newcommand{\bench}{\textsc{SnapRAG-LongConv}}
+\setlist{nosep}
+
+\title{\sys: Verified Reconstruction of Snapshot Memory\\for Long-Conversation Document QA}
+\author{\todo{authors and affiliations}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+When a conversation about documents outgrows the context window, assistants summarise or compress the old turns, and the loss is silent: a deadline stated at turn 7 is gone or changed by turn 70, and the model answers from the distorted memory with full confidence.
+\sys{} keeps every turn in an immutable archive and a small lossy snapshot of facts, numbers, user statements and decisions with document-page anchors.
+When old information is needed, text is reconstructed from the snapshot and \emph{every sentence is checked} against the snapshot, the pages it cites and the archive; only sentences that pass reach the prompt.
+A context-quality score decides when to snapshot, a turn-aware weight decides how much memory fits, the user's own statements are kept as a verified conversation state, and retrieval depth adapts to the question's intent.
+We release \bench{}, a scripted 80--100-turn document-QA conversation with memory probes at four distances, and a 75-question hard document-QA set.
+\todo{Fill last: on [LLM], probe accuracy of [X] versus [Y] for the best baseline at [Z] fewer prompt tokens; the verified reconstruction lowers unsupported memory claims from [A] to [B]; the paired differences with the intervals that are not marked as noise.}
+\end{abstract}
+
+\section{Introduction}
+Long conversations about documents---study material, contracts, manuals---are common, and the context window is finite.
+Three fixes are used today, and each fails in a way that is hard to see. A larger window costs more with every turn and models still miss facts buried in the middle. A rolling summary is cheap, but what it drops or distorts is invisible, so a wrong summary is used as confidently as a right one. A memory store retrieves past facts but does not check that what it hands back is true.
+
+Our idea is \emph{compress, reconstruct later, check against evidence, only then use}.
+Old turns are kept twice: verbatim in an append-only archive, and as a small lossy snapshot. When the old information is needed, a model rebuilds text from the snapshot and each sentence is verified against three sources in turn---the snapshot, the document pages it is anchored to, and the archive. A sentence no source supports is dropped, not hedged.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+\item \textbf{Verified reconstruction} (C1): sentence-level verification of text rebuilt from a lossy snapshot against the snapshot, the anchored pages and an immutable archive, with a measured error rate of the verifier itself (Section~\ref{sec:method}, \ref{sec:results}).
+\item \textbf{A snapshot trigger and memory weight} (C2): a context-quality score (grounding, coherence, contradiction, headroom) decides when to snapshot, and a turn-aware weight decides how much memory fits in the prompt.
+\item \textbf{A benchmark} (C3): \bench{}, a long document-QA conversation with page-cited answers, user-planted facts, corrections and four distance buckets, scored by fixed patterns.
+\item \textbf{Intent- and memory-aware adaptive retrieval} (C4): we build on AB-RAG~\cite{kamthan2026abrag} by letting the question's intent set the first batch and budget, counting verified memory as evidence, and not searching the documents for questions about the chat itself.
+\end{enumerate}
+We state plainly where the evidence is weak: one LLM family, one or two documents, and comparisons whose intervals include zero are reported as such (Section~\ref{sec:limits}).
+
+\section{Related Work}
+\paragraph{Context compression and agent memory.}
+LCM~\cite{lcm2026} also keeps an immutable store beside summaries and lets the agent expand a summary into the original; it does not check reconstructed text. MemCoRe~\cite{memcore2026} recovers evidence from progressively compressed facts on LoCoMo. Context Codec~\cite{trukhina2026codec} compresses chat history into typed, source-grounded atoms with a verification stage and reports atom recall and round-trip recoverability; its checks are on atoms, whereas ours are on each reconstructed \emph{sentence} against an archive and document pages. ChronoMem~\cite{su2026chronomem} adds version control to agent memory; MemRefine~\cite{memrefine2026} compresses a built memory under a budget. Mem0~\cite{chhikara2025mem0}, A-MEM~\cite{xu2025amem} and LLMLingua~\cite{jiang2023llmlingua} are memory stores and prompt compression that we do not run as baselines (Section~\ref{sec:limits}).
+
+\paragraph{Retrieval control.}
+CRAG~\cite{yan2024crag} grades retrieved passages and re-searches; Self-RAG~\cite{asai2023selfrag} learns to retrieve and critique; HyDE~\cite{gao2022hyde} retrieves with a hypothetical answer; IRCoT~\cite{trivedi2022ircot} interleaves retrieval and reasoning; Adaptive-RAG~\cite{jeong2024adaptiverag} routes by question complexity. AB-RAG~\cite{kamthan2026abrag} answers, estimates confidence from the model's certainty, the answer--evidence agreement and the spread of retrieval scores, and retrieves more within a budget. We re-implement all of them in one harness (Section~\ref{sec:docqa}).
+
+\paragraph{Benchmarks.}
+LoCoMo~\cite{maharana2024locomo} and LongMemEval~\cite{wu2024longmemeval} test memory in personal conversations; MTRAG~\cite{katsis2025mtrag} tests multi-turn RAG over about eight turns. We know of none that combines a long conversation over documents, user-planted facts and page-cited answers; this rests on a limited search (see Appendix~\ref{app:novelty}).
+
+\section{Setting}
+A conversation has turns $(q_t,a_t)$ over a document set $D$. The prompt may hold at most $B$ tokens of memory. At turn $t$ the system must answer $q_t$ from $D$ and from facts of earlier turns, cite pages, and not state anything about the past that the conversation does not support. Three stores are kept: a cold \emph{archive} (append-only, never edited), \emph{snapshots} (versioned, hash-chained, vector-indexed summaries) and a \emph{conversation state} (the user's decisions, statements and open questions, versioned).
+
+\section{Method}\label{sec:method}
+\paragraph{Snapshots and the CIS trigger (C2).}
+A snapshot holds facts, numbers, entities, user facts, decisions and open questions, each with document and page anchors; numbers and names are kept verbatim because compression loses them first. After each turn a context-quality score
+\[
+\mathrm{CIS}=0.35\,g+0.25\,h+0.25\,c-0.15\,x
+\]
+combines grounding $g$ (share of the window's answers that the answer checker found supported), headroom $h$ (one minus the window's tokens over the memory budget), coherence $c$ (mean embedding similarity of consecutive turns) and contradiction $x\in\{0,1\}$ (an LLM check of the latest answer against the earlier ones). A snapshot is taken when $h<0.20$ or $\mathrm{CIS}<0.55$. The share of the budget given to memory grows with the turn number, $\lambda(t)=\sigma\bigl(0.08(t-8)\bigr)$, since early turns are still in the prompt. The coefficients and thresholds are design defaults, not fitted.
+
+\paragraph{Verified reconstruction (C1).}
+Given a question, the best snapshot is chosen by embedding similarity and a model rebuilds relevant sentences from it, using the anchored pages only to restore detail (Algorithm~\ref{alg:verify}). Each sentence is then judged against the sources in a fixed order; a sentence supported by none is dropped. The ladder of recall modes used in the ablation is: \texttt{snapshot} (nothing checked), \texttt{evidence} (adds the pages), \texttt{verify} (checks each sentence against snapshot and pages), \texttt{archive} (adds the archive as the last resort for sentences still in doubt).
+
+\begin{algorithm}[t]
+\caption{Verified reconstruction of memory for a question $q$}\label{alg:verify}
+\begin{algorithmic}[1]
+\State $s \gets$ the snapshot most similar to $q$
+\State $P \gets$ pages that $s$ cites;\quad $A \gets$ archive turns covered by $s$
+\State $R \gets$ \textsc{Reconstruct}$(s, P, q)$ \Comment{sentences}
+\For{each sentence $r\in R$}
+  \If{\textsc{Judge}$(r; s, P)$ supports $r$} keep $r$
+  \ElsIf{\textsc{Judge}$(r; A)$ supports $r$} keep $r$
+  \Else{} drop $r$
+  \EndIf
+\EndFor
+\State \Return the kept sentences, within the memory budget $\lambda(t)\,B$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Conversation state.}
+What the user says about their own task is in no document, so once the turn leaves the prompt only the snapshot or the archive holds it. Candidate items (decisions, statements, open questions) are extracted and each is checked against the user's own messages; the model may only point at items that a newer message supersedes. Items are versioned, and a hand-off document is built on request.
+
+\paragraph{Intent- and memory-aware adaptive retrieval (C4).}
+Following AB-RAG~\cite{kamthan2026abrag}, the first batch of passages is answered and scored, and more passages are read only while the confidence is below a threshold and budget remains:
+\[
+\mathrm{conf}=w_1 S_1 + w_2 S_2 + w_3 S_3,\qquad (w_1,w_2,w_3)=(0.50,0.25,0.25)\ \text{by default},
+\]
+with $S_1$ the checker's judged certainty, $S_2$ the cosine of the answer to its closest evidence text (documents or verified memory), and $S_3$ the standard deviation of the reranker scores. \emph{Our $S_1$ differs from the paper's:} AB-RAG reads token probabilities, or uses self-consistency for closed models; our gateway returns no probabilities, so $S_1$ is a judged confidence, a proxy. An unsupported answer is capped below the threshold. What we add is that the question's \emph{intent} fixes the first batch and the budget (a definition reads 3 passages and may read one more batch, a summary 8 and three), that verified memory counts as evidence, that a question about the chat never goes back to the documents, and that the next batch is the same ranking read deeper before any fresh wider search.
+
+\section{Benchmarks}
+\paragraph{\bench{} (C3).}\label{sec:longconv}
+A script of 80--100 turns about a torts textbook mixes document questions (with page-cited gold answers), user-planted facts about their own coursework, and corrections. Twenty-four probes later ask for them in five kinds---recall, supersede (the corrected value), reference (``the example I chose''), absent (never said) and trap (a false premise)---at four distances: near (3--10 turns), mid (12--25), far (30--50), very far (60--85). Scoring uses fixed patterns, not an LLM judge; an \emph{absent} probe is correct only if the system declines. A scripted oracle checks the scorer.
+
+\paragraph{Document-QA architecture set.}\label{sec:docqa}
+Seventy-five questions on a scanned novel were written by reading it: single facts, numbers, lists, questions that need facts from pages that are not neighbours, inference, and nine unanswerable or false-premise questions. Each answerable question lists the facts an answer needs (as patterns) and the gold pages; a validator checks every pattern against the PDF. Fourteen architectures answer the same questions over the same index and LLM: no retrieval; dense, BM25, hybrid and hybrid+cross-encoder pipelines; simplified re-implementations of HyDE, CRAG, Self-RAG (prompted, not the fine-tuned model), IRCoT, Adaptive-RAG and AB-RAG; and \sys{} with and without the adaptive batches. They are \emph{not} the authors' models or code.
+
+\section{Experimental Setup}
+\todo{LLM, embedder, reranker, chunk sizes, dates, seeds, commit: take from the generated run-settings table.} Temperature is 0. Proportions have exact (Clopper--Pearson) intervals; scores have bootstrap intervals; architectures are compared on the same questions with an exact sign test (right/wrong) or Wilcoxon test (scores), Holm-adjusted over the family of comparisons.
+
+\section{Results}\label{sec:results}
+\subsection{Long-conversation memory (\bench{})}
+\todo{Accuracy by variant and distance bucket; memory loss (near minus very far); tokens per turn. Insert generated tables and Figure~\ref{fig:distance}.}
+\IfFileExists{generated/longconv.tex}{\input{generated/longconv.tex}}{}
+
+\subsection{The verification ladder (C1)}
+\todo{Unsupported-claim rate and fact recall for snapshot, evidence, verify, archive; Figure~\ref{fig:ladder}; the verifier's false-accept and false-reject rates from the hand-labelled sample.}
+\IfFileExists{generated/ladder.tex}{\input{generated/ladder.tex}}{}
+
+\subsection{Document-QA architectures}
+\todo{Accuracy with exact intervals, fact score, retrieval recall, cost; paired comparison with Holm-adjusted p-values.}
+\IfFileExists{generated/docqa.tex}{\input{generated/docqa.tex}}{}
+
+\subsection{Calibration and ablations}
+\todo{Confidence calibration on held-out questions; the planner/HyDE ablation; fixed interval, fixed $\lambda$, fixed-$k$, no exemplars.}
+\IfFileExists{generated/ablations.tex}{\input{generated/ablations.tex}}{}
+
+\section{Limitations}\label{sec:limits}
+\begin{itemize}
+\item One document family per benchmark and one LLM family; a second document and a second model are only partly covered.
+\item The verifier is an LLM and can itself be wrong; its error rate is measured on a small hand-labelled sample by one labeller.
+\item $S_1$ is a judged confidence, not token probabilities, so our AB-RAG differs from the original; its weights and threshold were calibrated on held-out questions only after the main comparison.
+\item The re-implemented methods are simplified; Self-RAG is only prompted, CRAG has no web search. Mem0, A-MEM, LCM and LLMLingua are not baselines: they need their own code.
+\item The benchmark conversations are scripted and the scoring requires every fact, which counts near-misses as wrong.
+\item Extra LLM calls and latency are the price of the checks (Section~\ref{sec:results}).
+\item The document-QA novel is under copyright: we release questions, answers and page numbers, not the text.
+\end{itemize}
+
+\section{Conclusion}
+\todo{One sentence on the problem, one on the method, the best measured result with its interval, and what is future work: a second document and model, calibrated confidence, a human study of the verifier.}
+
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\appendix
+\section{Novelty check}\label{app:novelty}
+\IfFileExists{generated/novelty.tex}{\input{generated/novelty.tex}}{}
+\IfFileExists{generated/appendix.tex}{\input{generated/appendix.tex}}{}
+
+\end{document}

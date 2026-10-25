@@ -378,6 +378,8 @@ All are environment variables (see `rag-service/app/core/config.py`):
 | `CQM_FIXED_INTERVAL` / `CQM_CHECK_CONTRADICTION` | 0 / true | ablation: snapshot every N turns; the per-turn contradiction call |
 | `MEMORY_ROOT` | unset | keep chats and memory elsewhere than `STORAGE_DIR` (benchmarks use a temp folder) |
 | `RECONSTRUCTION_MODEL` | `LLM_MODEL` | model that rebuilds and verifies memory |
+| `LLM_MAX_RETRIES` / `LLM_REQUESTS_PER_MINUTE` | 6 / 0 | retries with backoff on 429, 5xx and connection errors; client-side cap on requests a minute (0 = none) |
+| `FOLLOWUPS_ENABLED` | true | suggest follow-up questions with each answer (one extra LLM call; the benchmarks turn it off) |
 
 ---
 
@@ -455,6 +457,20 @@ The run writes a results file and a Markdown report (accuracy with 95% intervals
 quality, cost, accuracy by question type, paired differences against SnapRAG, the questions
 SnapRAG got wrong). `--resume <file>` continues an interrupted run. The document must be
 uploaded (indexed) first.
+
+### The evidence for the paper, step by step
+
+| Question | Command (from `rag-service/`) |
+|---|---|
+| Does memory help over a long conversation? | `python -m benchmarks.longconv.run --variants full,no_memory,... --turns 80 --keep-chats benchmarks/results/chats --out benchmarks/results/longconv_part1.json`, then `python -m benchmarks.longconv.final_report <files>` |
+| Does verification cut unsupported claims? | `python -m benchmarks.longconv.ladder --chats benchmarks/results/chats --variant full` |
+| How often is the verifier wrong? | `python -m benchmarks.verifier_audit sample benchmarks/results/ladder_full.json --out audit_sheet.json`, label `supported_by_sources`, then `... score audit_sheet.json` |
+| Is the AB-RAG confidence calibrated? | run `snaprag_calib` in the document-QA run, then `python -m benchmarks.docqa.calibrate <results> --test-from <sample results>` |
+| Everything in one file | `python -m benchmarks.assemble_results` writes `SnapRAG_Benchmark_Results.md/.pdf` and `SnapRAG_Benchmark_Tables.tex` |
+
+Both benchmarks record provider-reported tokens, seconds with and without the request-rate wait, the git commit, the seed and the
+date. On the free Gemini tier set `LLM_REQUESTS_PER_MINUTE` (15 a minute per model is the limit; use a little less). The paper draft,
+its figures and its appendix are in `paper/` (`main.tex`, `make_figures.py`, `build_appendix.py`, `status.md`, `novelty_check.md`).
 
 ### Tests
 

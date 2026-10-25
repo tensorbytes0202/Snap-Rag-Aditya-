@@ -9,7 +9,7 @@ from openai import OpenAI
 
 from app.core.config import settings
 from app.core.exceptions import LLMProviderError
-from app.core.metrics import record_llm_call
+from app.core.metrics import record_llm_call, record_usage, record_wait
 
 _log = logging.getLogger(__name__)
 
@@ -49,6 +49,7 @@ def _wait_for_slot() -> None:
     """Blocks until a request may start without passing the per-minute limit."""
 
     limit = settings.LLM_REQUESTS_PER_MINUTE
+    started = time.monotonic()
 
     while limit > 0:
 
@@ -61,6 +62,7 @@ def _wait_for_slot() -> None:
 
             if len(_started) < limit:
                 _started.append(now)
+                record_wait(now - started)
                 return
 
             wait = 60 - (now - _started[0])
@@ -68,12 +70,23 @@ def _wait_for_slot() -> None:
         time.sleep(wait + 0.1)
 
 
-def _retry_delay(exc: Exception) -> float | None:
-    """Seconds the provider asks us to wait after a quota error, else None."""
+def _retry_delay(exc: Exception, attempt: int) -> float | None:
+    """Seconds to wait before trying again, or None when trying again cannot help: a 429 waits as long as
+    the provider asks (a per-day quota is not retried), a server error, timeout or lost connection backs off
+    exponentially, any other error is final."""
 
-    match = _RETRY_IN.search(str(exc)) if "429" in str(exc) else None
+    text, status = str(exc), getattr(exc, "status_code", None)
 
-    return min(float(match.group(1)) + 1, 90) if match else None
+    if status == 429 or text.startswith("Error code: 429"):
+        if "PerDay" in text:
+            return None
+        match = _RETRY_IN.search(text)
+        return min(float(match.group(1)) + 1, 90) if match else min(60.0, 5.0 * 2 ** attempt)
+
+    if status is None or status >= 500:
+        return min(30.0, 2.0 * 2 ** attempt)
+
+    return None
 
 
 def _get_client():
@@ -92,7 +105,7 @@ def _get_client():
                     api_key=settings.LLM_GATEWAY_TOKEN,
                     base_url=settings.LLM_GATEWAY_URL,
                     timeout=settings.LLM_REQUEST_TIMEOUT_SECONDS,
-                    max_retries=settings.LLM_MAX_RETRIES,
+                    max_retries=0,           # retries are made in chat(), so each one passes the request-rate limit
                 )
             )
         except Exception as exc:
@@ -127,7 +140,7 @@ def chat(
 
     record_llm_call("stream" if stream else "chat")
 
-    for attempt in range(4):
+    for attempt in range(settings.LLM_MAX_RETRIES + 1):
 
         _wait_for_slot()
 
@@ -150,17 +163,19 @@ def chat(
 
         except Exception as exc:
 
-            delay = _retry_delay(exc)
+            delay = _retry_delay(exc, attempt)
 
-            if delay is None or attempt == 3:
+            if delay is None or attempt == settings.LLM_MAX_RETRIES:
                 raise LLMProviderError(str(exc)) from exc
 
+            record_wait(delay)
             time.sleep(delay)
 
     if stream:
         return completion
 
-    _log.debug("LLM usage: %s", getattr(completion, "usage", None))
+    usage = getattr(completion, "usage", None)
+    record_usage(getattr(usage, "prompt_tokens", None), getattr(usage, "completion_tokens", None))
 
     return {
         "message": {

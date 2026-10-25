@@ -1,0 +1,272 @@
+\section{Appendix}
+\subsection*{Reproduction}
+\begin{small}\begin{verbatim}
+# the tests (no network, models or services needed)
+python -m pytest
+# long-conversation benchmark
+python -m benchmarks.longconv.run --variants <names> --turns 80 --repeats 3 --keep-chats benchmarks/results/chats
+python -m benchmarks.longconv.ladder --chats benchmarks/results/chats --variant full
+python -m benchmarks.verifier_audit sample benchmarks/results/ladder_full.json --out audit_sheet.json
+# document-QA architecture comparison
+python -m benchmarks.docqa.validate
+python -m benchmarks.docqa.run --workers 4
+python -m benchmarks.docqa.calibrate benchmarks/results/docqa_full75.json --test-from benchmarks/results/docqa_pilot30.json
+python -m benchmarks.docqa.report <results.json> --pdf report.pdf --latex tables.tex
+\end{verbatim}\end{small}
+\subsection*{Hyper-parameters}
+\begin{table}[h]\centering\small\begin{tabular}{ll}\toprule Setting & Value \\ \midrule
+\texttt{LLM\_MODEL} & gemini-3.5-flash-lite \\
+\texttt{LLM\_REASONING\_EFFORT} & low \\
+\texttt{EMBEDDING\_MODEL} & BAAI/bge-small-en-v1.5 \\
+\texttt{CROSS\_ENCODER\_MODEL} & cross-encoder/ms-marco-MiniLM-L-6-v2 \\
+\texttt{PARENT\_CHUNK\_SIZE} & 3000 \\
+\texttt{CHILD\_CHUNK\_SIZE} & 800 \\
+\texttt{MEMORY\_BUDGET\_TOKENS} & 2000 \\
+\texttt{CQM\_W\_GROUNDING} & 0.35 \\
+\texttt{CQM\_W\_TOKEN} & 0.25 \\
+\texttt{CQM\_W\_COHERENCE} & 0.25 \\
+\texttt{CQM\_W\_CONTRADICTION} & 0.15 \\
+\texttt{CQM\_TRIGGER\_HEADROOM} & 0.2 \\
+\texttt{CQM\_TRIGGER\_CIS} & 0.55 \\
+\texttt{STOP\_CONFIDENCE} & 0.8 \\
+\texttt{MAX\_EXTRA\_BATCHES} & 3 \\
+\texttt{CONF\_W\_MODEL} & 0.5 \\
+\texttt{CONF\_W\_SIMILARITY} & 0.25 \\
+\texttt{CONF\_W\_SPREAD} & 0.25 \\
+\texttt{HISTORY\_TURNS} & 3 \\
+\bottomrule\end{tabular}\caption{Settings of the runs (defaults of the code; the values the runs used are in each report's run-settings table).}\end{table}
+\subsection*{Probes of \bench{}}
+\begin{small}\begin{longtable}{p{0.07\linewidth}p{0.12\linewidth}p{0.75\linewidth}}
+\toprule Kind & Bucket & Statement and probe \\ \midrule
+recall & near & Note this for later: the draft deadline for my torts coursework is 15 November. \emph{Probe:} What is my draft deadline? \\
+recall & mid & For my report I will cover only proximate cause and last clear chance, and I will skip nuisance and defamation. Remember that. \emph{Probe:} Which topics did I say I would skip in my report? \\
+recall & far & Keep in mind that my main worked example in the report will be the railway-crossing hypothetical. \emph{Probe:} Which example did I choose as the main one for my report? \\
+recall & very_far & Please note that my report has a strict limit of 2,500 words. \emph{Probe:} What word limit did I mention for my report? \\
+recall & near & My advisor is Dr. Meera Rao, and she wants Bluebook-style citations. Note that. \emph{Probe:} Who did I say my advisor is, and what citation style does she want? \\
+recall & mid & Remember that I am working on this with two classmates, Kabir and Ananya. \emph{Probe:} Which classmates did I say I am working with? \\
+recall & far & Note for later: my torts tutorial is every Tuesday at 4 pm. \emph{Probe:} When did I say my torts tutorial is? \\
+recall & very_far & Please remember that my viva will be in room B-204. \emph{Probe:} Which room did I say my viva will be in? \\
+recall & near & Note this: I keep all my references in Zotero. \emph{Probe:} Which tool did I say I keep my references in? \\
+recall & mid & Keep in mind that the report has to be written in British English. \emph{Probe:} Which variety of English did I say the report has to be in? \\
+recall & far & Remember that I must also read Prosser's chapter on negligence before the viva. \emph{Probe:} What additional reading did I say I must finish before the viva? \\
+recall & very_far & Note for later: I name my laptop Tortoise. \emph{Probe:} What did I say I name my laptop? \\
+supersede & mid & Note this: my presentation slot is on 3 December. Later: Correction, please note: my presentation slot has moved to 10 December. \emph{Probe:} When is my presentation slot? \\
+supersede & far & Keep in mind that my report topic is the negligence of carriers. Later: Correction, please remember: I changed my report topic to the rescue doctrine. \emph{Probe:} What is my report topic now? \\
+absent & -- & (never said) \emph{Probe:} What is my exam date? \\
+absent & -- & (never said) \emph{Probe:} What is my student ID number? \\
+absent & -- & (never said) \emph{Probe:} Which university did I say I attend? \\
+absent & -- & (never said) \emph{Probe:} What grade did I say I got on my last torts assignment? \\
+trap & -- & (false premise) \emph{Probe:} What did Romney Marsh v. Trinity House hold about the last clear chance doctrine? \\
+trap & -- & (false premise) \emph{Probe:} What did Milwaukee \& St. P. R. Co. v. Kellogg decide about res ipsa loquitur? \\
+reference & -- & \emph{Probe (asked at four earlier turns):} Which topic did I ask you to explain at turn {turn}? Answer with the topic only. \\
+\bottomrule\end{longtable}\end{small}
+\section{Prompts}
+\subsection{Snapshot encoder}
+\begin{footnotesize}
+\begin{verbatim}
+You compress part of a conversation about documents into a memory snapshot.
+The snapshot replaces these turns later, so anything you leave out is forgotten.
+
+Return ONLY JSON in this shape:
+{
+  "facts": [{"text": "...", "turn": <turn number>}],
+  "user_facts": [{"text": "...", "turn": <turn number>}],
+  "entities": [{"name": "...", "turns": [<turn numbers>]}],
+  "decisions": [{"topic": "...", "status": "closed" or "open", "turn": <turn number>}],
+  "open_questions": ["..."]
+}
+
+Rules:
+- facts: atomic statements taken from the ANSWERS about the documents. Keep every
+    number,
+  address, name, date, case name, section number, page and unit exactly as written. Name
+    the
+  subject in each fact ("Router-2 routes 10.0.0.0/8 via 50.50.50.1"), never "it" or
+    "this".
+  One statement per fact, no duplicates.
+- Skip answers that say information was missing or could not be verified.
+- user_facts: things the USER stated in their own messages that are not from a document:
+  deadlines, dates, names, limits, preferences, constraints, the example or scope they
+    chose,
+  corrections to earlier statements ("actually I will also cover X"). Copy the user's
+    wording and
+  numbers exactly and write each as a full statement ("The user's draft deadline is 15
+    November").
+- decisions: only choices or commitments the USER made about their own task ("report
+    will cover
+  only sections 26 and 27, not 32 and 33"); "open" if they are still undecided. Never
+    list a topic
+  just because it was explained or asked about.
+- entities: the named things the facts are about (devices, people, cases, sections,
+    concepts).
+- open_questions: questions the user asked that the answers did not resolve.
+- Use only what the turns say. Do not add outside knowledge.
+{exemplars}
+TURNS:
+{turns}
+\end{verbatim}
+\end{footnotesize}
+
+\subsection{Reconstruction}
+\begin{footnotesize}
+\begin{verbatim}
+You rebuild conversation memory from a compressed snapshot.
+
+SNAPSHOT of turns {from_turn}-{to_turn} of a conversation about documents:
+{snapshot}
+{evidence}
+TASK: Write what this memory says that is relevant to: {focus}
+- Short, self-contained sentences. Name the subject in each; keep numbers, names and
+  units exactly as in the snapshot.
+- Use the document passages only to restore detail around snapshot facts.
+- If nothing is relevant, return an empty list.
+
+Return ONLY JSON: {"sentences": ["...", "..."]}
+\end{verbatim}
+\end{footnotesize}
+
+\subsection{Sentence judge (verification)}
+\begin{footnotesize}
+\begin{verbatim}
+Check each SENTENCE against the SOURCES below.
+For each sentence give the label of the FIRST source (in the order listed) that clearly
+states it, or "none" if no source states it or a source contradicts it.
+Paraphrases count; a different number, name or claim does not.
+
+{sources}
+
+SENTENCES:
+{sentences}
+
+"source" must be exactly one of {labels}: a source label, never a turn or page
+    reference.
+Return ONLY JSON: {"checks": [{"i": <sentence number>, "source": <label>}]}
+\end{verbatim}
+\end{footnotesize}
+
+\subsection{Answer verification (confidence check)}
+\begin{footnotesize}
+\begin{verbatim}
+You are an expert RAG verification system.
+
+Your job is to verify whether the generated answer is supported by the retrieved
+    context.
+
+Question:
+{question}
+
+Retrieved Context:
+{context}
+
+Generated Answer:
+{answer}
+
+Instructions:
+
+- Compare ONLY with the retrieved context.
+- Do NOT use outside knowledge.
+- Conclusions that follow directly from the context count as supported, e.g. a path
+  traced through connections the context lists, or a result the context shows.
+- If the answer is fully supported, return supported=true.
+- If any stated fact is missing from or contradicts the context, supported=false.
+- A part the answer marks "Not found in the retrieved text" is an honest gap, not an
+  unsupported claim. An answer that says information is missing or was never given is
+  supported when the context indeed lacks it.
+- Check that the answer is about the same thing the question asks about. If the question
+  names a device, case, section, person or document and the answer states facts that the
+  context attaches to a DIFFERENT one, set "entity_mismatch" to true and supported to
+    false.
+- An answer that only acknowledges or restates what the user said in the Question
+    ("Noted:
+  your deadline is 15 November") is supported by the Question itself.
+- Sections of the context headed CONVERSATION STATE, HAND-OFF or VERIFIED MEMORY hold
+    what
+  was said earlier in this conversation; an answer about the conversation may rely on
+    them.
+- List each unsupported statement in "unsupported_claims" (at most 5, each under 25
+  words; empty when supported).
+- Return ONLY valid JSON.
+
+Example:
+
+{
+    "supported": true,
+    "confidence": 0.94,
+    "reason": "The answer is fully supported by the retrieved context.",
+    "entity_mismatch": false,
+    "unsupported_claims": []
+}
+\end{verbatim}
+\end{footnotesize}
+
+\subsection{Baseline prompt: grade (re-implemented method)}
+\begin{footnotesize}
+\begin{verbatim}
+You grade retrieved passages for a question about a novel.
+
+Question: {question}
+
+{passages}
+
+For each passage say "relevant" (it holds information needed to answer), "ambiguous"
+    (related, but not clearly
+enough) or "irrelevant". Return only JSON: {"grades": ["relevant", "irrelevant"]} with
+    one entry per passage, in order.
+\end{verbatim}
+\end{footnotesize}
+
+\subsection{Baseline prompt: critic (re-implemented method)}
+\begin{footnotesize}
+\begin{verbatim}
+Question about a novel: {question}
+
+Each candidate answer below was written from one passage only.
+
+{candidates}
+
+For every candidate rate from 1 to 5: how relevant the passage is to the question, how
+    well the passage supports the answer,
+and how useful the answer is. Return only JSON: {"scores": [[relevance, support,
+    usefulness], ...]} with one entry per candidate.
+\end{verbatim}
+\end{footnotesize}
+
+\subsection{Baseline prompt: route (re-implemented method)}
+\begin{footnotesize}
+\begin{verbatim}
+Classify the question about a novel by the retrieval it needs.
+A: simple, answerable without looking anything up
+B: needs facts from one place in the book (single-step retrieval)
+C: needs facts from several places or several reasoning steps (multi-step retrieval)
+
+Question: {question}
+
+Return only the letter.
+\end{verbatim}
+\end{footnotesize}
+
+\subsection{Baseline prompt: step (re-implemented method)}
+\begin{footnotesize}
+\begin{verbatim}
+Answer the question about a novel from the passages, reasoning step by step.
+Write ONLY the next reasoning sentence. If the passages already let you answer fully,
+    write ANSWER: and the final answer.
+
+Question: {question}
+
+Passages:
+{context}
+
+Reasoning so far: {thoughts}
+\end{verbatim}
+\end{footnotesize}
+
+\subsection{Baseline prompt: rewrite (re-implemented method)}
+\begin{footnotesize}
+\begin{verbatim}
+Rewrite the question as a short keyword search query for finding the answer in a novel.
+    Return only the query.
+
+Question: {question}
+\end{verbatim}
+\end{footnotesize}

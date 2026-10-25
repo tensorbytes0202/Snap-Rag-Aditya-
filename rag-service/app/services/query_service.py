@@ -3,6 +3,7 @@ import logging
 from langsmith import traceable
 
 from app.cache.cache_service import get_cache, set_cache
+from app.core.config import settings
 from app.core import metrics
 from app.services.abrag import run_batches
 from app.services.answering import make_attempt, present_answer
@@ -67,7 +68,7 @@ def process_query(
 
     memory = finalize_memory(memory, found.top_context)
 
-    first = make_attempt(question, found, memory, history, "initial", with_followups=True)
+    first = make_attempt(question, found, memory, history, "initial", with_followups=settings.FOLLOWUPS_ENABLED)
 
     best, attempts = run_batches(
         question,
@@ -76,7 +77,7 @@ def process_query(
         lambda deeper, strategy: make_attempt(question, deeper, memory, history, strategy),
     )
 
-    followups = best.followups if best.followups is not None else generate_followups(question, best.answer)
+    followups = best.followups if best.followups is not None else (generate_followups(question, best.answer) if settings.FOLLOWUPS_ENABLED else [])
 
     _log.debug("Verification: %s", best.verification)
 
